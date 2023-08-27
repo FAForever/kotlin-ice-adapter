@@ -1,0 +1,16 @@
+Thumbs.db
+.DS_Store
+.gradle
+kia-cli/build/
+kia-lib/build/
+target/
+out/
+.idea
+*.iml
+*.ipr
+*.iws
+.project
+.settings
+.classpath
+.factorypath
+LOG_DIR_IS_UNDEFINED/
