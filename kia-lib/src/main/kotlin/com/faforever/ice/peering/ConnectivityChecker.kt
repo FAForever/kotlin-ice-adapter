@@ -1,5 +1,6 @@
 package com.faforever.ice.peering
 
+import com.faforever.ice.ice4j.IceState
 import com.faforever.ice.util.ExecutorHolder
 import com.faforever.ice.util.ReusableComponent
 import io.github.oshai.kotlinlogging.KotlinLogging

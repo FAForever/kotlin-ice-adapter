@@ -2,6 +2,7 @@ package com.faforever.ice.gpgnet
 
 import com.faforever.ice.IceAdapterDiedException
 import com.faforever.ice.IceOptions
+import com.faforever.ice.util.ExecutorHolder
 import com.faforever.ice.util.ReusableComponent
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.io.Closeable
@@ -10,6 +11,7 @@ import java.net.ServerSocket
 import java.net.Socket
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.BlockingQueue
+import java.util.concurrent.ScheduledExecutorService
 
 private val logger = KotlinLogging.logger {}
 
@@ -20,6 +22,10 @@ private val logger = KotlinLogging.logger {}
 class GpgnetProxy(
     iceOptions: IceOptions
 ) : ReusableComponent, Closeable {
+    companion object {
+        private val sharedExecutor: ScheduledExecutorService get() = ExecutorHolder.executor
+    }
+
     private val gpgnetPort = iceOptions.gpgnetPort
 
     private val inQueue: BlockingQueue<GpgnetMessage> = ArrayBlockingQueue(32, true)
@@ -49,7 +55,7 @@ class GpgnetProxy(
             }
         }
 
-        setupSocketToGameInstance()
+        sharedExecutor.submit { setupSocketToGameInstance() }
 
         logger.info { "GpgnetProxy started" }
     }
@@ -112,6 +118,8 @@ class GpgnetProxy(
         logger.debug { "GpgnetProxy closing" }
 
         synchronized(objectLock) {
+            if (closing) return
+
             closing = true
 
             gameReaderThread?.apply {
