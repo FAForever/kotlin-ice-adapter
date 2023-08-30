@@ -4,6 +4,7 @@ import com.faforever.ice.game.LobbyConnectionProxy
 import com.faforever.ice.gpgnet.GpgnetMessage
 import com.faforever.ice.gpgnet.GpgnetMessage.*
 import com.faforever.ice.gpgnet.GpgnetProxy
+import com.faforever.ice.ice4j.CandidatesMessage
 import com.faforever.ice.peering.ConnectivityChecker
 import com.faforever.ice.peering.CoturnServer
 import com.faforever.ice.peering.RemotePeerOrchestrator
@@ -13,6 +14,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import io.github.oshai.kotlinlogging.KotlinLogging
+import java.lang.IllegalStateException
 import java.net.InetAddress
 import java.util.concurrent.ConcurrentHashMap
 
@@ -42,6 +44,11 @@ class IceAdapter(
 
     private fun localDestination(port: Int) = "${InetAddress.getLocalHost()}:$port"
 
+    override fun receiveIceCandidates(remotePlayerId: Int, candidatesMessage: CandidatesMessage) {
+        val orchestrator = players[remotePlayerId] ?: throw IllegalStateException("Unknown remotePlayerId: $remotePlayerId")
+        orchestrator.onRemoteCandidatesReceived(candidatesMessage)
+    }
+
     override fun hostGame(mapName: String) {
         logger.debug { "hostGame: mapName=$mapName" }
         gpgnetProxy.sendGpgnetMessage(HostGame(mapName))
@@ -51,10 +58,12 @@ class IceAdapter(
         logger.debug { "joinGame: remotePlayerLogin=$remotePlayerLogin, remotePlayerId=$remotePlayerId" }
 
         val remotePeerOrchestrator = RemotePeerOrchestrator(
+            localPlayerId = iceOptions.userId,
             remotePlayerId = remotePlayerId,
             localOffer = false,
             coturnServers = coturnServers,
             relayToLocalGame = lobbyConnectionProxy::sendData,
+            publishLocalCandidates = { TODO() },
         ).also { it.initialize() }
 
         players[remotePlayerId] = remotePeerOrchestrator
@@ -72,10 +81,12 @@ class IceAdapter(
         logger.debug { "joinGame: remotePlayerLogin=$remotePlayerLogin, remotePlayerId=$remotePlayerId" }
 
         val remotePeerOrchestrator = RemotePeerOrchestrator(
+            localPlayerId = iceOptions.userId,
             remotePlayerId = remotePlayerId,
             localOffer = offer,
             coturnServers = coturnServers,
             relayToLocalGame = lobbyConnectionProxy::sendData,
+            publishLocalCandidates = { TODO() },
         ).also { it.initialize() }
 
         players[remotePlayerId] = remotePeerOrchestrator

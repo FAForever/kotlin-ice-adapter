@@ -10,8 +10,6 @@ import org.ice4j.ice.Component
 import org.ice4j.ice.IceMediaStream
 import org.ice4j.ice.IceProcessingState
 import org.ice4j.ice.harvest.StunCandidateHarvester
-import org.ice4j.ice.harvest.TurnCandidateHarvester
-import org.ice4j.security.LongTermCredential
 import java.io.Closeable
 import java.io.IOException
 import java.net.DatagramPacket
@@ -20,9 +18,12 @@ import java.time.Duration
 private val logger = KotlinLogging.logger {}
 
 class AgentWrapper(
+    private val localPlayerId: Int,
+    private val remotePlayerId: Int,
     private val localOffer: Boolean,
     private val coturnServers: List<CoturnServer>,
     private val onStateChanged: (IceState, IceState)->Unit,
+    private val onCandidatesGathered: (CandidatesMessage) -> Unit,
 ) : Closeable {
 
     companion object {
@@ -78,12 +79,12 @@ class AgentWrapper(
                 }
                 coturnServers.forEach {
                     addCandidateHarvester(StunCandidateHarvester(it.toTCPTransport()))
-                    addCandidateHarvester(
-                        TurnCandidateHarvester(
-                            it.toTCPTransport(),
-                            LongTermCredential("user", "password")
-                        )
-                    )
+//                    addCandidateHarvester(
+//                        TurnCandidateHarvester(
+//                            it.toTCPTransport(),
+//                            LongTermCredential("user", "password")
+//                        )
+//                    )
                 }
             }.also {
                 mediaStream = it.createMediaStream("faData")
@@ -97,9 +98,22 @@ class AgentWrapper(
             Timeout.builder<Component>(Duration.ofSeconds(5L)).build()
         )
             .onSuccess {
+                logger.info { "Harvesting finished, component created" }
                 synchronized(objectLock) {
                     this.component = it.result
+                    setState(IceState.AWAITING_CANDIDATES)
                 }
+
+                val candidates = CandidateUtil.packCandidates(
+                    sourceId = localPlayerId,
+                    destinationId = remotePlayerId,
+                    agent = agent!!,
+                    component = it.result,
+                    allowHost = true, // TODO: Make configurable
+                    allowReflexive = true, // TODO: Make configurable
+                    allowRelay = true, // TODO: Make configurable
+                )
+                onCandidatesGathered(candidates)
             }
             .onFailure {
                 when (it.exception) {
@@ -120,6 +134,54 @@ class AgentWrapper(
                     MINIMUM_PORT + 1000
                 )
             }
+    }
+
+    fun onRemoteCandidatesReceived(candidatesMessage: CandidatesMessage) {
+        if(closing) {
+            logger.warn { "Agent not connected anymore, discarding candidates message" }
+            return
+        }
+
+        // TODO: We skipped some state checks from the original ice adapter
+
+        setState(IceState.CHECKING)
+
+        CandidateUtil.unpackCandidates(
+            remoteCandidatesMessage = candidatesMessage,
+            agent = this.agent!!,
+            component = this.component!!,
+            mediaStream = this.mediaStream!!,
+            allowHost = true,
+            allowReflexive = true,
+            allowRelay = true,
+        )
+
+        startIce()
+    }
+
+    private fun startIce() {
+        val agent = requireNotNull(agent)
+        agent.startConnectivityEstablishment()
+
+        //Wait for termination/completion of the agent
+        val iceStartTime = System.currentTimeMillis()
+        while (agent.state != IceProcessingState.COMPLETED) { //TODO include more?, maybe stop on COMPLETED, is that to early?
+            try {
+                Thread.sleep(20)
+            } catch (e: InterruptedException) {
+                logger.error(e) { "Interrupted while waiting for ICE"}
+                                }
+            if (agent.state == IceProcessingState.FAILED) { //TODO null pointer due to no agent?
+                logger.info { "onConnectionLost()" }
+                return
+            }
+            if (System.currentTimeMillis() - iceStartTime > 15000) {
+                logger.error { "ABORTING ICE DUE TO TIMEOUT" }
+
+                logger.info { "onConnectionLost()" }
+                return
+            }
+        }
     }
 
     fun receive(): ByteArray {

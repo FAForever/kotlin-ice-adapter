@@ -54,6 +54,8 @@ class UdpSocketBridge(
 
     @Throws(IOException::class)
     fun readAndForwardLoop() {
+        logger.info { "UdpSocketBridge $name is forwarding messages now" }
+
         while(true) {
             synchronized(objectLock) {
                 if (closing) return

@@ -1,9 +1,10 @@
 package com.faforever.ice.peering
 
 import com.faforever.ice.ice4j.AgentWrapper
+import com.faforever.ice.ice4j.CandidatesMessage
 import com.faforever.ice.ice4j.IceState
 import com.faforever.ice.util.ExecutorHolder
-import com.faforever.ice.util.isIn
+import com.faforever.ice.util.isNotIn
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.oshai.kotlinlogging.withLoggingContext
 import java.io.Closeable
@@ -15,17 +16,13 @@ import java.util.concurrent.TimeUnit
 
 private val logger = KotlinLogging.logger {}
 
-/**
- * Allowed state transitions:
- * NEW -> GATHERING
- * NEW -> AWAITING_CANDIDATES
- */
-
 class RemotePeerOrchestrator(
+    private val localPlayerId: Int,
     private val remotePlayerId: Int,
     private val localOffer: Boolean,
     private val coturnServers: List<CoturnServer>,
     private val relayToLocalGame: (ByteArray) -> Unit,
+    private val publishLocalCandidates: (CandidatesMessage) -> Unit,
 ) : Closeable {
     companion object {
         private val executor: ScheduledExecutorService get() = ExecutorHolder.executor
@@ -49,7 +46,7 @@ class RemotePeerOrchestrator(
     fun initialize() {
         withLoggingContext("remotePlayerId" to remotePlayerId.toString()) {
             synchronized(objectLock) {
-                if (this.iceState.isIn(IceState.NEW, IceState.DISCONNECTED)) {
+                if (this.iceState.isNotIn(IceState.NEW, IceState.DISCONNECTED)) {
                     logger.warn { "ICE already in progress, aborting re initiation. current state: ${this.iceState}" }
                     return
                 }
@@ -57,10 +54,25 @@ class RemotePeerOrchestrator(
 
                 udpSocketBridge = UdpSocketBridge(toRemoteQueue::put, "player-$remotePlayerId")
                     .apply { start() }
-                agent = AgentWrapper(localOffer, coturnServers, ::onIceStateChange)
-                    .apply { start() }
+                agent = AgentWrapper(
+                    localPlayerId = localPlayerId,
+                    remotePlayerId = remotePlayerId,
+                    localOffer = localOffer,
+                    coturnServers = coturnServers,
+                    onStateChanged = ::onIceStateChange,
+                    onCandidatesGathered = ::onLocalCandidatesGathered
+                ).apply { start() }
+            }
+        }
+    }
 
-                remoteListenerThread= Thread { readFromRemotePlayerLoop() }
+    private fun onIceStateChange(oldState: IceState, newState: IceState) {
+        if (closing) return
+
+        when {
+            newState == IceState.DISCONNECTED -> onConnectionLost()
+            newState == IceState.CONNECTED -> {
+                remoteListenerThread = Thread { readFromRemotePlayerLoop() }
                     .apply { start() }
                 remoteSenderThread = Thread { sendToRemotePlayerLoop() }
                     .apply { start() }
@@ -68,10 +80,18 @@ class RemotePeerOrchestrator(
         }
     }
 
-    private fun onIceStateChange(oldState: IceState, newState: IceState) {
-        if (newState == IceState.DISCONNECTED && !closing) {
-            onConnectionLost()
+    private fun onLocalCandidatesGathered(candidatesMessage: CandidatesMessage) {
+        logger.info { "Sending own candidates to $remotePlayerId: $candidatesMessage" }
+        publishLocalCandidates(candidatesMessage)
+    }
+
+    fun onRemoteCandidatesReceived(candidatesMessage: CandidatesMessage) {
+        if(closing) {
+            logger.warn { "Peer not connected anymore, discarding candidates message" }
+            return
         }
+
+        agent!!.onRemoteCandidatesReceived(candidatesMessage)
     }
 
     private fun onConnectionLost() {
@@ -188,7 +208,7 @@ class RemotePeerOrchestrator(
 
     override fun close() {
         synchronized(objectLock) {
-            if(!closing) return
+            if (!closing) return
 
             closing = true
             remoteListenerThread?.interrupt()

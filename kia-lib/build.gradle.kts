@@ -14,8 +14,8 @@ dependencies {
     implementation("com.google.guava:guava:32.1.2-jre")
     implementation("dev.failsafe:failsafe:3.3.2")
 
-    testImplementation("org.junit.jupiter:junit-jupiter-api:5.10.0")
-    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.10.0")
+    testImplementation("org.junit.jupiter:junit-jupiter:5.10.0")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     testImplementation("io.mockk:mockk:1.13.7")
     testImplementation("org.slf4j:slf4j-simple:2.0.7")
 }
