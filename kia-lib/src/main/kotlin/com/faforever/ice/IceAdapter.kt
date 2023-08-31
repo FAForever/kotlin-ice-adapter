@@ -22,8 +22,8 @@ private val logger = KotlinLogging.logger {}
 
 class IceAdapter(
     private val iceOptions: IceOptions,
-    private val callbacks: ControlPlane,
-    private val coturnServers: List<CoturnServer>
+    private val coturnServers: List<CoturnServer>,
+    private val onIceCandidatesGathered: (CandidatesMessage)->Unit,
 ) : ControlPlane, ReusableComponent {
     private val objectMapper = ObjectMapper().apply {
         registerModule(JavaTimeModule())
@@ -42,7 +42,7 @@ class IceAdapter(
         connectivityChecker.start()
     }
 
-    private fun localDestination(port: Int) = "${InetAddress.getLocalHost()}:$port"
+    private fun localDestination(port: Int) = "${InetAddress.getLoopbackAddress().hostAddress}:$port"
 
     override fun receiveIceCandidates(remotePlayerId: Int, candidatesMessage: CandidatesMessage) {
         val orchestrator = players[remotePlayerId] ?: throw IllegalStateException("Unknown remotePlayerId: $remotePlayerId")
@@ -63,7 +63,7 @@ class IceAdapter(
             localOffer = false,
             coturnServers = coturnServers,
             relayToLocalGame = lobbyConnectionProxy::sendData,
-            publishLocalCandidates = { TODO() },
+            publishLocalCandidates = onIceCandidatesGathered,
         ).also { it.initialize() }
 
         players[remotePlayerId] = remotePeerOrchestrator
@@ -72,7 +72,7 @@ class IceAdapter(
             JoinGame(
                 remotePlayerLogin = remotePlayerLogin,
                 remotePlayerId = remotePlayerId,
-                localDestination(checkNotNull(iceOptions.lobbyPort))
+                localDestination(remotePeerOrchestrator.udpBridgePort)
             )
         )
     }
@@ -86,7 +86,7 @@ class IceAdapter(
             localOffer = offer,
             coturnServers = coturnServers,
             relayToLocalGame = lobbyConnectionProxy::sendData,
-            publishLocalCandidates = { TODO() },
+            publishLocalCandidates = onIceCandidatesGathered,
         ).also { it.initialize() }
 
         players[remotePlayerId] = remotePeerOrchestrator
@@ -95,7 +95,7 @@ class IceAdapter(
             ConnectToPeer(
                 remotePlayerLogin = remotePlayerLogin,
                 remotePlayerId = remotePlayerId,
-                localDestination(checkNotNull(iceOptions.lobbyPort))
+                localDestination(remotePeerOrchestrator.udpBridgePort)
             )
         )
     }

@@ -70,7 +70,7 @@ class LobbyConnectionProxy(
         while (!closing) {
             val data = inQueue.take()
             val packet =
-                DatagramPacket(data, 0, data.size - 1, InetAddress.getLocalHost(), lobbyPort)
+                DatagramPacket(data, 0, data.size, InetAddress.getLoopbackAddress(), lobbyPort)
                 socket.send(packet)
         }
     }

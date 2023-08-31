@@ -5,6 +5,7 @@ import java.io.Closeable
 import java.io.IOException
 import java.net.DatagramPacket
 import java.net.DatagramSocket
+import kotlin.random.Random
 
 private val logger = KotlinLogging.logger {}
 
@@ -14,6 +15,7 @@ private val logger = KotlinLogging.logger {}
 class UdpSocketBridge(
     private val forwardTo: (ByteArray) -> Unit,
     private val name: String = "unnamed",
+    private val port: Int,
     bufferSize: Int = 65536
 ) : Closeable {
     private val objectLock = Object()
@@ -22,8 +24,6 @@ class UdpSocketBridge(
     private var socket: DatagramSocket? = null
     private var readingThread: Thread? = null
     private val buffer = ByteArray(bufferSize)
-
-    val port: Int? = synchronized(objectLock) { socket?.port }
 
     private fun checkNotClosing() {
         if (closing) throw IOException("Socket closing for UdpSocketBridge $name")
@@ -36,7 +36,7 @@ class UdpSocketBridge(
             checkNotClosing()
 
             socket = try {
-                DatagramSocket(0)
+                DatagramSocket(port)
             } catch (e: IOException) {
                 logger.error(e) { "Couldn't start UdpSocketBridge $name" }
                 throw e
@@ -64,7 +64,7 @@ class UdpSocketBridge(
             val packet = DatagramPacket(buffer, buffer.size)
             socket!!.receive(packet)
             logger.trace { "$name: Forwarding ${packet.length} bytes" }
-            forwardTo(buffer.copyOfRange(0, packet.length - 1))
+            forwardTo(buffer.copyOfRange(0, packet.length))
         }
     }
 

@@ -56,7 +56,7 @@ internal class FaStreamReader(inputStream: InputStream): Closeable {
         val command = readString()
         val args = readChunks()
 
-        val message = GpgnetMessage.ReceivedMessage(command, args)
+        val message = GpgnetMessage.ReceivedMessage(command, args).tryParse()
 
         logger.trace { "Received message: $message" }
         return message

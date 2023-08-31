@@ -1,15 +1,26 @@
 package com.faforever.ice
 
-import com.faforever.ice.gpgnet.FakeGpgnetClient
+import com.faforever.ice.gpgnet.FakeGameClient
+import com.faforever.ice.ice4j.CandidatesMessage
 import com.faforever.ice.peering.CoturnServer
-import io.mockk.mockk
 import org.junit.jupiter.api.Test
 import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.InetAddress
-import javax.xml.crypto.Data
 
 class IceAdapterIT {
+    class CandidatesTestForwarder(
+    ) {
+        lateinit var adapter1: IceAdapter
+        lateinit var adapter2: IceAdapter
+
+        fun onCandidatesFromA1(candidatesMessage: CandidatesMessage) =
+            adapter2.receiveIceCandidates(1, candidatesMessage)
+
+        fun onCandidatesFromA2(candidatesMessage: CandidatesMessage) =
+            adapter1.receiveIceCandidates(2, candidatesMessage)
+
+    }
 
     @Test
     fun test() {
@@ -20,10 +31,8 @@ class IceAdapterIT {
     }
 
     fun invokeTest() {
+        val candidatesTestForwarder = CandidatesTestForwarder()
         val coturnServers: List<CoturnServer> = listOf(CoturnServer("stun.l.google.com", 19302))
-
-        val controlPlane1 = mockk<ControlPlane>()
-        val controlPlane2 = mockk<ControlPlane>()
 
         val adapter1 = IceAdapter(
             iceOptions = IceOptions(
@@ -35,12 +44,12 @@ class IceAdapterIT {
                 5002,
                 "telemetryServer"
             ),
-            callbacks = controlPlane1,
-            coturnServers = coturnServers
+            coturnServers = coturnServers,
+            candidatesTestForwarder::onCandidatesFromA1,
         ).apply { start() }
-        val client1 = FakeGpgnetClient(5002, 1)
 //        adapter1.hostGame("myMapName")
-        adapter1.connectToPeer("User 1", 1, false)
+        val client1 = FakeGameClient(5002, 5001, 1)
+        adapter1.connectToPeer("User 2", 2, false)
 
         val adapter2 = IceAdapter(
             iceOptions = IceOptions(
@@ -52,34 +61,25 @@ class IceAdapterIT {
                 6002,
                 "telemetryServer"
             ),
-            callbacks = controlPlane2,
-            coturnServers = coturnServers
+            coturnServers = coturnServers,
+            candidatesTestForwarder::onCandidatesFromA2,
         ).apply { start() }
-        val client2 = FakeGpgnetClient(6002, 2)
-        adapter2.joinGame("User 2", 2)
+        val client2 = FakeGameClient(6002, 6001, 2)
 
-        Thread.sleep(1000)
+        candidatesTestForwarder.adapter1 = adapter1
+        candidatesTestForwarder.adapter2 = adapter2
 
-        println("Starting thread to send data...")
+        adapter2.joinGame("User 1", 1)
 
+        Thread.sleep(5000)
+
+
+        println("Sending hello world...")
         val data = "hello world".encodeToByteArray()
 
-
-        Thread {
-            val listeningSocket = DatagramSocket(8888, InetAddress.getLocalHost())
-            val buffer = ByteArray(65536)
-            val packet = DatagramPacket(buffer, buffer.size)
-
-            println("Listening on socket 8888")
-            listeningSocket.receive(packet)
-
-            println("Receive: $buffer")
-        }.start()
-
-
-        Thread.sleep(1000)
-        println("Sending hello world...")
-        val sendingSocket = DatagramSocket(9999, InetAddress.getLocalHost())
-        sendingSocket.send(DatagramPacket(data, 0, data.size, InetAddress.getLocalHost(), 6001))
+        client1.sendLobbyData(data)
+//        val result = client2.receiveLobbyData()
+//
+//        println("Data received: $result")
     }
 }

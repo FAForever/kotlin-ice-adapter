@@ -142,6 +142,8 @@ class AgentWrapper(
             return
         }
 
+        logger.info { "Remote candidates received: $candidatesMessage" }
+
         // TODO: We skipped some state checks from the original ice adapter
 
         setState(IceState.CHECKING)
@@ -188,7 +190,7 @@ class AgentWrapper(
         val packet = DatagramPacket(readBuffer, readBuffer.size)
         checkNotNull(component).selectedPair.iceSocketWrapper.receive(packet)
 
-        return readBuffer.copyOfRange(0, packet.length - 1)
+        return readBuffer.copyOfRange(0, packet.length)
     }
 
     @Throws(IOException::class)
@@ -198,7 +200,7 @@ class AgentWrapper(
             val address = component.selectedPair.remoteCandidate.transportAddress.address
             val port = component.selectedPair.remoteCandidate.transportAddress.port
             component.selectedPair.iceSocketWrapper.send(
-                DatagramPacket(data, 0, data.size - 1, address, port)
+                DatagramPacket(data, 0, data.size, address, port)
             )
         } catch (e: IOException) {
             // TODO: Maybe reconnect?

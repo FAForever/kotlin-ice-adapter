@@ -13,6 +13,7 @@ import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
+import kotlin.random.Random
 
 private val logger = KotlinLogging.logger {}
 
@@ -28,6 +29,7 @@ class RemotePeerOrchestrator(
         private val executor: ScheduledExecutorService get() = ExecutorHolder.executor
     }
 
+    val udpBridgePort = Random.nextInt(40_000, 60_000)
     private val toRemoteQueue: BlockingQueue<ByteArray> = ArrayBlockingQueue(32, true)
 
     private val objectLock = Object()
@@ -43,6 +45,7 @@ class RemotePeerOrchestrator(
     @Volatile
     private var closing = false
 
+
     fun initialize() {
         withLoggingContext("remotePlayerId" to remotePlayerId.toString()) {
             synchronized(objectLock) {
@@ -52,7 +55,7 @@ class RemotePeerOrchestrator(
                 }
                 this.iceState = IceState.GATHERING
 
-                udpSocketBridge = UdpSocketBridge(toRemoteQueue::put, "player-$remotePlayerId")
+                udpSocketBridge = UdpSocketBridge(toRemoteQueue::put, "player-$remotePlayerId", udpBridgePort)
                     .apply { start() }
                 agent = AgentWrapper(
                     localPlayerId = localPlayerId,
@@ -72,10 +75,13 @@ class RemotePeerOrchestrator(
         when {
             newState == IceState.DISCONNECTED -> onConnectionLost()
             newState == IceState.CONNECTED -> {
-                remoteListenerThread = Thread { readFromRemotePlayerLoop() }
-                    .apply { start() }
-                remoteSenderThread = Thread { sendToRemotePlayerLoop() }
-                    .apply { start() }
+                synchronized(objectLock) {
+                    connected = true
+                    remoteListenerThread = Thread { readFromRemotePlayerLoop() }
+                        .apply { start() }
+                    remoteSenderThread = Thread { sendToRemotePlayerLoop() }
+                        .apply { start() }
+                }
             }
         }
     }
@@ -86,7 +92,7 @@ class RemotePeerOrchestrator(
     }
 
     fun onRemoteCandidatesReceived(candidatesMessage: CandidatesMessage) {
-        if(closing) {
+        if (closing) {
             logger.warn { "Peer not connected anymore, discarding candidates message" }
             return
         }
@@ -145,10 +151,10 @@ class RemotePeerOrchestrator(
                 when {
                     data.isEmpty() -> continue
                     //Received data
-                    data[0] == 'd'.code.toByte() -> TODO()
+                    data[0] == 'd'.code.toByte() -> relayToLocalGame(data)
                     //Received echo req/res
-                    data[0] == 'e'.code.toByte() -> relayToLocalGame(data)
-                    else -> logger.warn { "Received invalid packet, first byte: 0x${data[0]}, length: ${data.size}" }
+                    data[0] == 'e'.code.toByte() -> TODO()
+                    else -> logger.warn { "Received invalid packet, first byte: 0x${data[0]}, length: ${data.size}, as String: ${String(data)}" }
                 }
             } catch (e: IOException) {
                 logger.warn { "Error while reading from ICE adapter" }
@@ -181,8 +187,8 @@ class RemotePeerOrchestrator(
                 }
 
                 else -> {
-                    val message = toRemoteQueue.peek()
-                    val success = sendToRemotePlayer(message)
+                    val message: ByteArray? = toRemoteQueue.peek()
+                    val success = if(message == null) false else sendToRemotePlayer(message)
                     if (success) {
                         // in case we could send successfully, discard it
                         toRemoteQueue.remove()
