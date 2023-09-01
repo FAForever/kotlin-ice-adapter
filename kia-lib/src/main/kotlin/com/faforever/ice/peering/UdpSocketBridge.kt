@@ -10,7 +10,9 @@ import kotlin.random.Random
 private val logger = KotlinLogging.logger {}
 
 /**
- * A unidirectional bridge that receives data via data on a UDP socket and forwards it wherever desired
+ * Each remote player has an ice4j-socket that is not necessarily using UDP. But the game only sends lobby data via UDP.
+ *
+ * Thus, we use the UdpSocketBridge to forward UDP message to any kind of socket.
  */
 class UdpSocketBridge(
     private val forwardTo: (ByteArray) -> Unit,

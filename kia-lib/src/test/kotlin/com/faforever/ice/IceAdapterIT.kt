@@ -75,11 +75,11 @@ class IceAdapterIT {
 
 
         println("Sending hello world...")
-        val data = "hello world".encodeToByteArray()
+        val data = "dhello world".encodeToByteArray()
 
         client1.sendLobbyData(data)
-//        val result = client2.receiveLobbyData()
-//
-//        println("Data received: $result")
+        val result = client2.receiveLobbyData()
+
+        println("Data received: ${String(result)}")
     }
 }

@@ -4,6 +4,7 @@ import com.faforever.ice.IceAdapterDiedException
 import com.faforever.ice.IceOptions
 import com.faforever.ice.util.ExecutorHolder
 import com.faforever.ice.util.ReusableComponent
+import com.faforever.ice.util.SocketFactory
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.io.Closeable
 import java.io.IOException
@@ -32,7 +33,8 @@ class GpgnetProxy(
     private val outQueue: BlockingQueue<GpgnetMessage> = ArrayBlockingQueue(32, true)
 
     private val objectLock = Object()
-    private var closing: Boolean = false
+    var closing: Boolean = false
+        private set
     private var socket: ServerSocket? = null
     private var gameReaderThread: Thread? = null
     private var gameWriterThread: Thread? = null
@@ -48,9 +50,10 @@ class GpgnetProxy(
             outQueue.clear()
 
             socket = try {
-                ServerSocket(gpgnetPort)
+                SocketFactory.createLocalTCPSocket(gpgnetPort)
             } catch (e: IOException) {
                 logger.error(e) { "Couldn't start GpgnetProxy on port $gpgnetPort" }
+                close()
                 throw IceAdapterDiedException("Couldn't start GpgnetProxy on port $gpgnetPort", e)
             }
         }
@@ -90,8 +93,13 @@ class GpgnetProxy(
                 logger.debug { "Ready to read messages" }
 
                 while (!closing) {
-                    val message = reader.readMessage()
-                    outQueue.put(message)
+                    try {
+                        val message = reader.readMessage()
+                        outQueue.put(message)
+                    } catch (e: InterruptedException) {
+                        if (closing) return
+                        else throw e
+                    }
                 }
             }
         }
@@ -103,8 +111,13 @@ class GpgnetProxy(
                 logger.debug { "Ready to write messages" }
 
                 while (!closing) {
-                    val message = inQueue.take()
-                    writer.writeMessage(message)
+                    try {
+                        val message = inQueue.take()
+                        writer.writeMessage(message)
+                    } catch (e: InterruptedException) {
+                        if (closing) return
+                        else throw e
+                    }
                 }
             }
         }

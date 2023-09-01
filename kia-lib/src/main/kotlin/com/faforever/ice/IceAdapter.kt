@@ -8,13 +8,11 @@ import com.faforever.ice.ice4j.CandidatesMessage
 import com.faforever.ice.peering.ConnectivityChecker
 import com.faforever.ice.peering.CoturnServer
 import com.faforever.ice.peering.RemotePeerOrchestrator
-import com.faforever.ice.telemetry.TelemetryClient
 import com.faforever.ice.util.ReusableComponent
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import io.github.oshai.kotlinlogging.KotlinLogging
-import java.lang.IllegalStateException
 import java.net.InetAddress
 import java.util.concurrent.ConcurrentHashMap
 
@@ -39,6 +37,7 @@ class IceAdapter(
 
     override fun start() {
         gpgnetProxy.start()
+        lobbyConnectionProxy.start()
         connectivityChecker.start()
     }
 
@@ -78,7 +77,7 @@ class IceAdapter(
     }
 
     override fun connectToPeer(remotePlayerLogin: String, remotePlayerId: Int, offer: Boolean) {
-        logger.debug { "joinGame: remotePlayerLogin=$remotePlayerLogin, remotePlayerId=$remotePlayerId" }
+        logger.debug { "connectToPeer: remotePlayerLogin=$remotePlayerLogin, remotePlayerId=$remotePlayerId" }
 
         val remotePeerOrchestrator = RemotePeerOrchestrator(
             localPlayerId = iceOptions.userId,

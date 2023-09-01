@@ -3,6 +3,7 @@ package com.faforever.ice.game
 import com.faforever.ice.IceAdapterDiedException
 import com.faforever.ice.IceOptions
 import com.faforever.ice.util.ReusableComponent
+import com.faforever.ice.util.SocketFactory
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.io.Closeable
 import java.io.IOException
@@ -14,6 +15,9 @@ import java.util.concurrent.BlockingQueue
 
 private val logger = KotlinLogging.logger {}
 
+/**
+ * The LobbyConnectionProxy is the only channel that can send to the game process.
+ */
 class LobbyConnectionProxy(
     iceOptions: IceOptions
 ) : ReusableComponent, Closeable {
@@ -34,10 +38,10 @@ class LobbyConnectionProxy(
             inQueue.clear()
 
             socket = try {
-                DatagramSocket(lobbyPort)
+                SocketFactory.createLocalUDPSocket()
             } catch (e: IOException) {
-                logger.error(e) { "Couldn't start LobbyConnectionProxy on port $lobbyPort" }
-                throw IceAdapterDiedException("Couldn't start LobbyConnectionProxy on port $lobbyPort", e)
+                logger.error(e) { "Couldn't start LobbyConnectionProxy" }
+                throw IceAdapterDiedException("Couldn't start LobbyConnectionProxy", e)
             }
         }
 

@@ -17,6 +17,9 @@ internal class FaStreamReader(inputStream: InputStream): Closeable {
         private const val MAX_CHUNK_SIZE = 10
     }
 
+    private val objectLock = Object()
+    @Volatile
+    private var closing: Boolean = false
     private val inputStream = LittleEndianDataInputStream(BufferedInputStream(inputStream))
 
     init {
@@ -65,6 +68,9 @@ internal class FaStreamReader(inputStream: InputStream): Closeable {
     @Throws(IOException::class)
     override fun close() {
         logger.debug { "Closing FaStreamReader" }
+        synchronized(objectLock) {
+            closing = true
+        }
         inputStream.close()
     }
 }

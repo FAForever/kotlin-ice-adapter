@@ -1,8 +1,8 @@
 package com.faforever.ice.gpgnet
 
+import com.faforever.ice.util.SocketFactory
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.net.DatagramPacket
-import java.net.DatagramSocket
 import java.net.InetAddress
 import java.net.Socket
 
@@ -15,7 +15,7 @@ class FakeGameClient(
 ) {
     private var proxyLobbyPort: Int? = null
     private val gpgnetSocket = Socket(InetAddress.getLoopbackAddress().hostAddress, gpgNetPort)
-    private val lobbySocket = DatagramSocket(gameLobbyPort, InetAddress.getLoopbackAddress())
+    private val lobbySocket = SocketFactory.createLocalUDPSocket(gameLobbyPort)
 
     fun sendLobbyData(data: ByteArray) {
         lobbySocket.send(DatagramPacket(data, 0, data.size, InetAddress.getLoopbackAddress(), proxyLobbyPort!!))
