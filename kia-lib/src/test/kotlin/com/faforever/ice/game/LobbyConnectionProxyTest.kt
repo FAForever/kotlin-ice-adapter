@@ -24,7 +24,7 @@ class LobbyConnectionProxyTest {
 
     private lateinit var sut: LobbyConnectionProxy
 
-    private val testUDPPort = 5001
+    private val testUDPPort = 35601
 
     @BeforeEach
     fun beforeEach() {

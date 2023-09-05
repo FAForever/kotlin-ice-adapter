@@ -3,10 +3,11 @@ package com.faforever.ice
 import com.faforever.ice.gpgnet.FakeGameClient
 import com.faforever.ice.ice4j.CandidatesMessage
 import com.faforever.ice.peering.CoturnServer
+import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Test
 
 class IceAdapterIT {
-    class CandidatesTestForwarder() {
+    class CandidatesTestForwarder {
         lateinit var adapter1: IceAdapter
         lateinit var adapter2: IceAdapter
 
@@ -18,14 +19,9 @@ class IceAdapterIT {
     }
 
     @Test
-    fun test() {
-        Thread(::invokeTest).start()
-        while (true) {
-            Thread.sleep(1000)
-        }
-    }
+    fun `2 ice adapters should exchange a message`() {
+        val data = "dhello world".encodeToByteArray()
 
-    fun invokeTest() {
         val candidatesTestForwarder = CandidatesTestForwarder()
         val coturnServers: List<CoturnServer> = listOf(CoturnServer("stun.l.google.com", 19302))
 
@@ -42,7 +38,7 @@ class IceAdapterIT {
             coturnServers = coturnServers,
             candidatesTestForwarder::onCandidatesFromA1,
         ).apply { start() }
-//        adapter1.hostGame("myMapName")
+
         val client1 = FakeGameClient(5002, 5001, 1)
         adapter1.connectToPeer("User 2", 2, false)
 
@@ -68,12 +64,9 @@ class IceAdapterIT {
 
         Thread.sleep(5000)
 
-        println("Sending hello world...")
-        val data = "dhello world".encodeToByteArray()
-
         client1.sendLobbyData(data)
         val result = client2.receiveLobbyData()
 
-        println("Data received: ${String(result)}")
+        assertArrayEquals(data, result)
     }
 }
