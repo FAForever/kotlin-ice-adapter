@@ -19,7 +19,7 @@ private val logger = KotlinLogging.logger {}
  * The LobbyConnectionProxy is the only channel that can send to the game process.
  */
 class LobbyConnectionProxy(
-    iceOptions: IceOptions
+    iceOptions: IceOptions,
 ) : ReusableComponent, Closeable {
     private val lobbyPort = iceOptions.lobbyPort
 
@@ -57,7 +57,8 @@ class LobbyConnectionProxy(
             val socket = requireNotNull(socket)
 
             gameWriterThread = Thread(
-                { writeMessagesFromQueue(socket) }, "writeLobbyDataToGame"
+                { writeMessagesFromQueue(socket) },
+                "writeLobbyDataToGame",
             ).apply { start() }
 
             logger.info { "Connection to game instance established" }
@@ -75,7 +76,7 @@ class LobbyConnectionProxy(
             val data = inQueue.take()
             val packet =
                 DatagramPacket(data, 0, data.size, InetAddress.getLoopbackAddress(), lobbyPort)
-                socket.send(packet)
+            socket.send(packet)
         }
     }
 

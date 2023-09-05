@@ -8,5 +8,5 @@ data class IceOptions(
     val forceRelay: Boolean,
     val lobbyPort: Int,
     val gpgnetPort: Int,
-    val telemetryServer: String
+    val telemetryServer: String,
 )

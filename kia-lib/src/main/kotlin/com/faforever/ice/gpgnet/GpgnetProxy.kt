@@ -30,7 +30,7 @@ class GpgnetProxy(
     enum class ConnectionState {
         LISTENING,
         CONNECTED,
-        DISCONNECTED
+        DISCONNECTED,
     }
 
     private val gpgnetPort = iceOptions.gpgnetPort
@@ -43,6 +43,7 @@ class GpgnetProxy(
     @Volatile
     var closing: Boolean = false
         private set
+
     @Volatile
     var state: ConnectionState = ConnectionState.DISCONNECTED
         private set
@@ -95,7 +96,7 @@ class GpgnetProxy(
 
             gameReaderThread = Thread(
                 { readMessagesIntoQueue(socket) },
-                "readGpgnetMessagesFromGame"
+                "readGpgnetMessagesFromGame",
             ).apply {
                 setUncaughtExceptionHandler { _, throwable ->
                     logger.error(throwable) { "Failure in gameReaderThread" }
@@ -106,7 +107,7 @@ class GpgnetProxy(
 
             gameWriterThread = Thread(
                 { writeMessagesFromQueue(socket) },
-                "writeGpgnetMessagesToGame"
+                "writeGpgnetMessagesToGame",
             ).apply {
                 setUncaughtExceptionHandler { _, throwable ->
                     logger.error(throwable) { "Failure in gameWriterThread" }
@@ -132,8 +133,11 @@ class GpgnetProxy(
                         val message = reader.readMessage()
                         outQueue.put(message)
                     } catch (e: InterruptedException) {
-                        if (closing) return
-                        else throw e
+                        if (closing) {
+                            return
+                        } else {
+                            throw e
+                        }
                     }
                 }
             }
@@ -150,8 +154,11 @@ class GpgnetProxy(
                         val message = inQueue.take()
                         writer.writeMessage(message)
                     } catch (e: InterruptedException) {
-                        if (closing) return
-                        else throw e
+                        if (closing) {
+                            return
+                        } else {
+                            throw e
+                        }
                     }
                 }
             }

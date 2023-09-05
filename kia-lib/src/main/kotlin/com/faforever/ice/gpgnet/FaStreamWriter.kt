@@ -12,7 +12,7 @@ private val logger = KotlinLogging.logger {}
 /**
  * Not thread safe, as designed to be only accessed from a single thread
  */
-internal class FaStreamWriter(outputStream: OutputStream): Closeable {
+internal class FaStreamWriter(outputStream: OutputStream) : Closeable {
     private val outputStream = LittleEndianDataOutputStream(BufferedOutputStream(outputStream))
 
     init {
@@ -27,7 +27,7 @@ internal class FaStreamWriter(outputStream: OutputStream): Closeable {
     private fun writeArgs(args: List<Any>) {
         outputStream.writeInt(args.size)
         for ((index, arg) in args.withIndex()) {
-            when(arg) {
+            when (arg) {
                 is Double -> {
                     outputStream.writeByte(FaStreamConstants.FieldTypes.INT)
                     outputStream.writeInt(arg.toInt())

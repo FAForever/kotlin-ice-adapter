@@ -5,7 +5,6 @@ import java.io.Closeable
 import java.io.IOException
 import java.net.DatagramPacket
 import java.net.DatagramSocket
-import kotlin.random.Random
 
 private val logger = KotlinLogging.logger {}
 
@@ -18,7 +17,7 @@ class UdpSocketBridge(
     private val forwardTo: (ByteArray) -> Unit,
     private val name: String = "unnamed",
     private val port: Int,
-    bufferSize: Int = 65536
+    bufferSize: Int = 65536,
 ) : Closeable {
     private val objectLock = Object()
     private var started: Boolean = false
@@ -46,7 +45,7 @@ class UdpSocketBridge(
 
             val port = socket!!.localPort
 
-            readingThread = Thread{ readAndForwardLoop()}
+            readingThread = Thread { readAndForwardLoop() }
                 .apply { start() }
 
             started = true
@@ -58,7 +57,7 @@ class UdpSocketBridge(
     fun readAndForwardLoop() {
         logger.info { "UdpSocketBridge $name is forwarding messages now" }
 
-        while(true) {
+        while (true) {
             synchronized(objectLock) {
                 if (closing) return
             }

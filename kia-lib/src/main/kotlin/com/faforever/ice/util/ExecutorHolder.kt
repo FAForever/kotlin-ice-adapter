@@ -9,9 +9,9 @@ object ExecutorHolder {
 
     var executor: ScheduledExecutorService get() {
         val executor = _executor ?: Executors.newScheduledThreadPool(2)
-        if(_executor == null) {
+        if (_executor == null) {
             _executor = executor
         }
         return executor
-    } set(value) { _executor = value}
+    } set(value) { _executor = value }
 }

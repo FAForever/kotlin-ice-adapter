@@ -4,13 +4,9 @@ import com.faforever.ice.gpgnet.FakeGameClient
 import com.faforever.ice.ice4j.CandidatesMessage
 import com.faforever.ice.peering.CoturnServer
 import org.junit.jupiter.api.Test
-import java.net.DatagramPacket
-import java.net.DatagramSocket
-import java.net.InetAddress
 
 class IceAdapterIT {
-    class CandidatesTestForwarder(
-    ) {
+    class CandidatesTestForwarder() {
         lateinit var adapter1: IceAdapter
         lateinit var adapter2: IceAdapter
 
@@ -19,13 +15,12 @@ class IceAdapterIT {
 
         fun onCandidatesFromA2(candidatesMessage: CandidatesMessage) =
             adapter1.receiveIceCandidates(2, candidatesMessage)
-
     }
 
     @Test
     fun test() {
         Thread(::invokeTest).start()
-        while(true) {
+        while (true) {
             Thread.sleep(1000)
         }
     }
@@ -42,7 +37,7 @@ class IceAdapterIT {
                 false,
                 5001,
                 5002,
-                "telemetryServer"
+                "telemetryServer",
             ),
             coturnServers = coturnServers,
             candidatesTestForwarder::onCandidatesFromA1,
@@ -59,7 +54,7 @@ class IceAdapterIT {
                 false,
                 6001,
                 6002,
-                "telemetryServer"
+                "telemetryServer",
             ),
             coturnServers = coturnServers,
             candidatesTestForwarder::onCandidatesFromA2,
@@ -72,7 +67,6 @@ class IceAdapterIT {
         adapter2.joinGame("User 1", 1)
 
         Thread.sleep(5000)
-
 
         println("Sending hello world...")
         val data = "dhello world".encodeToByteArray()

@@ -3,10 +3,12 @@ package com.faforever.ice.ice4j
 import com.faforever.ice.ice4j.CandidatesMessage.CandidateDescriptor
 import org.ice4j.Transport
 import org.ice4j.TransportAddress
-import org.ice4j.ice.*
-import java.lang.IllegalStateException
-import java.util.*
-
+import org.ice4j.ice.Agent
+import org.ice4j.ice.CandidateType
+import org.ice4j.ice.Component
+import org.ice4j.ice.IceMediaStream
+import org.ice4j.ice.RemoteCandidate
+import java.util.UUID
 
 object CandidateUtil {
     fun packCandidates(
@@ -16,7 +18,7 @@ object CandidateUtil {
         component: Component,
         allowHost: Boolean,
         allowReflexive: Boolean,
-        allowRelay: Boolean
+        allowRelay: Boolean,
     ) = CandidatesMessage(
         sourceId = sourceId,
         destinationId = destinationId,
@@ -35,10 +37,10 @@ object CandidateUtil {
                     generation = agent.generation,
                     id = UUID.randomUUID().toString(),
                     relAddr = it.relatedAddress?.hostAddress,
-                    relPort = it.relatedAddress?.port ?: 0
+                    relPort = it.relatedAddress?.port ?: 0,
                 )
             }
-            .sorted()
+            .sorted(),
     )
 
     fun unpackCandidates(
@@ -48,7 +50,7 @@ object CandidateUtil {
         mediaStream: IceMediaStream,
         allowHost: Boolean,
         allowReflexive: Boolean,
-        allowRelay: Boolean
+        allowRelay: Boolean,
     ) {
         // Set candidates
         mediaStream.remotePassword = remoteCandidatesMessage.password
@@ -61,7 +63,7 @@ object CandidateUtil {
                 val mainAddress = TransportAddress(
                     remoteCandidatePacket.ip,
                     remoteCandidatePacket.port,
-                    Transport.parse(remoteCandidatePacket.protocol.lowercase())
+                    Transport.parse(remoteCandidatePacket.protocol.lowercase()),
                 )
                 val relatedCandidate =
                     if (remoteCandidatePacket.relAddr != null && remoteCandidatePacket.relPort > 0) {
@@ -69,18 +71,20 @@ object CandidateUtil {
                             TransportAddress(
                                 remoteCandidatePacket.relAddr,
                                 remoteCandidatePacket.relPort,
-                                Transport.parse(remoteCandidatePacket.protocol.lowercase())
-                            )
+                                Transport.parse(remoteCandidatePacket.protocol.lowercase()),
+                            ),
                         )
-                    } else null
+                    } else {
+                        null
+                    }
 
                 RemoteCandidate(
                     mainAddress,
                     component,
-                    remoteCandidatePacket.type,  //Expected to not return LOCAL or STUN (old names for host and srflx)
+                    remoteCandidatePacket.type, // Expected to not return LOCAL or STUN (old names for host and srflx)
                     remoteCandidatePacket.foundation,
                     remoteCandidatePacket.priority,
-                    relatedCandidate
+                    relatedCandidate,
                 )
             }
             .forEach(component::addRemoteCandidate)
@@ -90,16 +94,17 @@ object CandidateUtil {
         allowHost: Boolean,
         allowReflexive: Boolean,
         allowRelay: Boolean,
-        candidateType: CandidateType
+        candidateType: CandidateType,
     ) = when (candidateType) {
         CandidateType.HOST_CANDIDATE -> allowHost
         CandidateType.SERVER_REFLEXIVE_CANDIDATE,
-        CandidateType.PEER_REFLEXIVE_CANDIDATE -> allowReflexive
+        CandidateType.PEER_REFLEXIVE_CANDIDATE,
+        -> allowReflexive
         CandidateType.RELAYED_CANDIDATE -> allowRelay
 
         // Candidate types LOCAL and STUN can never occur as they are deprecated and not used
         CandidateType.LOCAL_CANDIDATE,
-        CandidateType.STUN_CANDIDATE -> throw IllegalStateException("Deprecated candidate type: $candidateType")
+        CandidateType.STUN_CANDIDATE,
+        -> throw IllegalStateException("Deprecated candidate type: $candidateType")
     }
 }
-

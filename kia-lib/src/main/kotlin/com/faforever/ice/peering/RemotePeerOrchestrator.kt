@@ -45,7 +45,6 @@ class RemotePeerOrchestrator(
     @Volatile
     private var closing = false
 
-
     fun initialize() {
         withLoggingContext("remotePlayerId" to remotePlayerId.toString()) {
             synchronized(objectLock) {
@@ -63,7 +62,7 @@ class RemotePeerOrchestrator(
                     localOffer = localOffer,
                     coturnServers = coturnServers,
                     onStateChanged = ::onIceStateChange,
-                    onCandidatesGathered = ::onLocalCandidatesGathered
+                    onCandidatesGathered = ::onLocalCandidatesGathered,
                 ).apply { start() }
             }
         }
@@ -150,9 +149,9 @@ class RemotePeerOrchestrator(
 
                 when {
                     data.isEmpty() -> continue
-                    //Received data
+                    // Received data
                     data[0] == 'd'.code.toByte() -> relayToLocalGame(data)
-                    //Received echo req/res
+                    // Received echo req/res
                     data[0] == 'e'.code.toByte() -> TODO()
                     else -> logger.warn { "Received invalid packet, first byte: 0x${data[0]}, length: ${data.size}, as String: ${String(data)}" }
                 }
@@ -188,7 +187,7 @@ class RemotePeerOrchestrator(
 
                 else -> {
                     val message: ByteArray? = toRemoteQueue.peek()
-                    val success = if(message == null) false else sendToRemotePlayer(message)
+                    val success = if (message == null) false else sendToRemotePlayer(message)
                     if (success) {
                         // in case we could send successfully, discard it
                         toRemoteQueue.remove()
@@ -198,7 +197,6 @@ class RemotePeerOrchestrator(
                     }
                 }
             }
-
         }
 
         logger.info { "sendToRemotePlayerLoop shutdown due to closing" }

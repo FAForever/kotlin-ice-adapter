@@ -31,10 +31,10 @@ class FakeGameClient(
     init {
         Thread({
             gpgnetSocket.getInputStream().use { inputStream ->
-                FaStreamReader(inputStream).use {faStream ->
+                FaStreamReader(inputStream).use { faStream ->
                     while (true) {
                         val message = faStream.readMessage()
-                        when(message) {
+                        when (message) {
                             is GpgnetMessage.JoinGame -> proxyLobbyPort = message.destination.split(":").last().toInt()
                             is GpgnetMessage.ConnectToPeer -> proxyLobbyPort = message.destination.split(":").last().toInt()
                         }

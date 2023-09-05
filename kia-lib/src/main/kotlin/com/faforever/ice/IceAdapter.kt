@@ -2,7 +2,10 @@ package com.faforever.ice
 
 import com.faforever.ice.game.LobbyConnectionProxy
 import com.faforever.ice.gpgnet.GpgnetMessage
-import com.faforever.ice.gpgnet.GpgnetMessage.*
+import com.faforever.ice.gpgnet.GpgnetMessage.ConnectToPeer
+import com.faforever.ice.gpgnet.GpgnetMessage.DisconnectFromPeer
+import com.faforever.ice.gpgnet.GpgnetMessage.HostGame
+import com.faforever.ice.gpgnet.GpgnetMessage.JoinGame
 import com.faforever.ice.gpgnet.GpgnetProxy
 import com.faforever.ice.ice4j.CandidatesMessage
 import com.faforever.ice.peering.ConnectivityChecker
@@ -21,7 +24,7 @@ private val logger = KotlinLogging.logger {}
 class IceAdapter(
     private val iceOptions: IceOptions,
     private val coturnServers: List<CoturnServer>,
-    private val onIceCandidatesGathered: (CandidatesMessage)->Unit,
+    private val onIceCandidatesGathered: (CandidatesMessage) -> Unit,
 ) : ControlPlane, ReusableComponent {
     private val objectMapper = ObjectMapper().apply {
         registerModule(JavaTimeModule())
@@ -71,8 +74,8 @@ class IceAdapter(
             JoinGame(
                 remotePlayerLogin = remotePlayerLogin,
                 remotePlayerId = remotePlayerId,
-                localDestination(remotePeerOrchestrator.udpBridgePort)
-            )
+                localDestination(remotePeerOrchestrator.udpBridgePort),
+            ),
         )
     }
 
@@ -94,8 +97,8 @@ class IceAdapter(
             ConnectToPeer(
                 remotePlayerLogin = remotePlayerLogin,
                 remotePlayerId = remotePlayerId,
-                localDestination(remotePeerOrchestrator.udpBridgePort)
-            )
+                localDestination(remotePeerOrchestrator.udpBridgePort),
+            ),
         )
     }
 

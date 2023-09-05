@@ -6,7 +6,6 @@ import io.mockk.mockk
 import io.mockk.mockkObject
 import java.net.ServerSocket
 
-
 fun mockCreateLocalTCPSocket(port: Int): ServerSocket {
     mockkObject(SocketFactory)
     val mockServerSocket = mockk<ServerSocket>()

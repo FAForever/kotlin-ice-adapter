@@ -28,7 +28,7 @@ class TelemetryClient(
             "Open the telemetry ui via ${
                 serverBaseUrl.replaceFirst(
                     "ws",
-                    "http"
+                    "http",
                 )
             }/app.html?gameId=$gameId&playerId=$userId"
         }

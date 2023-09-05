@@ -8,6 +8,7 @@ enum class GameState {
     IDLE,
     LOBBY,
     LAUNCHING,
+
     // Not in the original game, added by FAF project
     ENDED,
 }

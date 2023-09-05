@@ -9,5 +9,5 @@ enum class IceState(val message: String) {
     AWAITING_CANDIDATES("awaitingCandidates"),
     CHECKING("checking"),
     CONNECTED("connected"),
-    DISCONNECTED("disconnected");
+    DISCONNECTED("disconnected"),
 }

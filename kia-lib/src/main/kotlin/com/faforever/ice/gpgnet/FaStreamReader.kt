@@ -12,12 +12,13 @@ private val logger = KotlinLogging.logger {}
 /**
  * Not thread safe, as designed to be only accessed from a single thread
  */
-internal class FaStreamReader(inputStream: InputStream): Closeable {
+internal class FaStreamReader(inputStream: InputStream) : Closeable {
     companion object {
         private const val MAX_CHUNK_SIZE = 10
     }
 
     private val objectLock = Object()
+
     @Volatile
     private var closing: Boolean = false
     private val inputStream = LittleEndianDataInputStream(BufferedInputStream(inputStream))
@@ -36,14 +37,14 @@ internal class FaStreamReader(inputStream: InputStream): Closeable {
     private fun readChunks(): List<Any> {
         val numberOfChunks = inputStream.readInt()
 
-        if(numberOfChunks > MAX_CHUNK_SIZE) {
+        if (numberOfChunks > MAX_CHUNK_SIZE) {
             throw IOException("Too many chunks: $numberOfChunks")
         }
 
         val chunks = mutableListOf<Any>()
 
         for (i in 1..numberOfChunks) {
-            val data = when(inputStream.read()) {
+            val data = when (inputStream.read()) {
                 FaStreamConstants.FieldTypes.INT -> inputStream.readInt()
                 else -> FaStreamConstants.parseString(readString())
             }

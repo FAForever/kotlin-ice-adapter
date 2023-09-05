@@ -22,7 +22,7 @@ class AgentWrapper(
     private val remotePlayerId: Int,
     private val localOffer: Boolean,
     private val coturnServers: List<CoturnServer>,
-    private val onStateChanged: (IceState, IceState)->Unit,
+    private val onStateChanged: (IceState, IceState) -> Unit,
     private val onCandidatesGathered: (CandidatesMessage) -> Unit,
 ) : Closeable {
 
@@ -34,7 +34,6 @@ class AgentWrapper(
 
     // 64KiB = UDP MTU, in practice due to ethernet frames being <= 1500 B, this is often not used
     private val readBuffer = ByteArray(65536)
-
 
     @Volatile
     private var agent: Agent? = null
@@ -57,7 +56,7 @@ class AgentWrapper(
     }
 
     private fun setState(newState: IceState) {
-        if(state == newState) return
+        if (state == newState) return
 
         val oldState = this.state
         state = newState
@@ -95,7 +94,7 @@ class AgentWrapper(
     private fun gatherLocalCandidates() {
         logger.info { "Gathering local ICE candidates" }
         Failsafe.with(
-            Timeout.builder<Component>(Duration.ofSeconds(5L)).build()
+            Timeout.builder<Component>(Duration.ofSeconds(5L)).build(),
         )
             .onSuccess {
                 logger.info { "Harvesting finished, component created" }
@@ -131,13 +130,13 @@ class AgentWrapper(
                     mediaStream,
                     (MINIMUM_PORT..MINIMUM_PORT + 1000).random(),
                     MINIMUM_PORT,
-                    MINIMUM_PORT + 1000
+                    MINIMUM_PORT + 1000,
                 )
             }
     }
 
     fun onRemoteCandidatesReceived(candidatesMessage: CandidatesMessage) {
-        if(closing) {
+        if (closing) {
             logger.warn { "Agent not connected anymore, discarding candidates message" }
             return
         }
@@ -165,15 +164,15 @@ class AgentWrapper(
         val agent = requireNotNull(agent)
         agent.startConnectivityEstablishment()
 
-        //Wait for termination/completion of the agent
+        // Wait for termination/completion of the agent
         val iceStartTime = System.currentTimeMillis()
-        while (agent.state != IceProcessingState.COMPLETED) { //TODO include more?, maybe stop on COMPLETED, is that to early?
+        while (agent.state != IceProcessingState.COMPLETED) { // TODO include more?, maybe stop on COMPLETED, is that to early?
             try {
                 Thread.sleep(20)
             } catch (e: InterruptedException) {
-                logger.error(e) { "Interrupted while waiting for ICE"}
-                                }
-            if (agent.state == IceProcessingState.FAILED) { //TODO null pointer due to no agent?
+                logger.error(e) { "Interrupted while waiting for ICE" }
+            }
+            if (agent.state == IceProcessingState.FAILED) { // TODO null pointer due to no agent?
                 logger.info { "onConnectionLost()" }
                 return
             }
@@ -200,7 +199,7 @@ class AgentWrapper(
             val address = component.selectedPair.remoteCandidate.transportAddress.address
             val port = component.selectedPair.remoteCandidate.transportAddress.port
             component.selectedPair.iceSocketWrapper.send(
-                DatagramPacket(data, 0, data.size, address, port)
+                DatagramPacket(data, 0, data.size, address, port),
             )
         } catch (e: IOException) {
             // TODO: Maybe reconnect?

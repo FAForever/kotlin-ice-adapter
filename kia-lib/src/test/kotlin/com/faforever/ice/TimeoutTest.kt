@@ -5,7 +5,6 @@ import dev.failsafe.Timeout
 import org.ice4j.ice.Agent
 import org.junit.jupiter.api.Test
 import java.time.Duration
-import java.time.LocalDate
 import java.time.LocalDateTime
 
 class TimeoutTest {
@@ -16,7 +15,7 @@ class TimeoutTest {
             .with(
                 Timeout.builder<String>(Duration.ofSeconds(5L))
                     .withInterrupt()
-                    .build()
+                    .build(),
             )
             .onComplete { println("${LocalDateTime.now()}: onComplete $it") }
             .onSuccess { println("${LocalDateTime.now()}: onSuccess $it") }

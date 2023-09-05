@@ -21,4 +21,3 @@ internal object FaStreamConstants {
         .replace(TABULATOR, "\t")
         .replace(LINEBREAK, "\n")
 }
-

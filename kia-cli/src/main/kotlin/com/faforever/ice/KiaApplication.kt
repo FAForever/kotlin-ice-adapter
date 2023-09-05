@@ -1,6 +1,5 @@
 package com.faforever.ice
 
-import io.github.oshai.kotlinlogging.KLogging
 import io.github.oshai.kotlinlogging.KotlinLogging
 import picocli.CommandLine
 import picocli.CommandLine.Command
@@ -14,7 +13,7 @@ private val logger = KotlinLogging.logger {}
     name = "kotlin-ice-adapter",
     mixinStandardHelpOptions = true,
     usageHelpAutoWidth = true,
-    description = ["An ice (RFC 5245) based network bridge between FAF client and ForgedAlliance.exe"]
+    description = ["An ice (RFC 5245) based network bridge between FAF client and ForgedAlliance.exe"],
 )
 class KiaApplication : Callable<Int> {
 
@@ -27,7 +26,7 @@ class KiaApplication : Callable<Int> {
     @Option(
         names = ["--user-name"],
         required = true,
-        description = ["set the login of the local player e.g. \"Rhiza\""]
+        description = ["set the login of the local player e.g. \"Rhiza\""],
     )
     private lateinit var userName: String
 
@@ -43,14 +42,14 @@ class KiaApplication : Callable<Int> {
     @Option(
         names = ["--lobby-port"],
         defaultValue = "0",
-        description = ["set the port the game lobby should use for incoming UDP packets from the PeerRelay"]
+        description = ["set the port the game lobby should use for incoming UDP packets from the PeerRelay"],
     )
     private var lobbyPort: Int = 0
 
     @Option(
         names = ["--telemetry-server"],
         defaultValue = "wss://ice-telemetry.faforever.com",
-        description = ["Telemetry server to connect to"]
+        description = ["Telemetry server to connect to"],
     )
     private var telemetryServer: String = ""
 

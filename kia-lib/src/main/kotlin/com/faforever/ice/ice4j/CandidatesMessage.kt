@@ -8,7 +8,7 @@ data class CandidatesMessage(
     val destinationId: Int,
     val password: String,
     val ufrag: String,
-    val candidates: List<CandidateDescriptor>
+    val candidates: List<CandidateDescriptor>,
 ) {
 
     @JvmRecord
@@ -22,11 +22,8 @@ data class CandidatesMessage(
         val generation: Int,
         val id: String,
         val relAddr: String?,
-        val relPort: Int
+        val relPort: Int,
     ) : Comparable<CandidateDescriptor> {
         override operator fun compareTo(other: CandidateDescriptor) = (other.priority - priority).toInt()
     }
-
 }
-
-

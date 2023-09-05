@@ -15,7 +15,7 @@ typealias PlayerId = Int
 
 private val logger = KotlinLogging.logger {}
 
-class ConnectivityChecker: ReusableComponent {
+class ConnectivityChecker : ReusableComponent {
     companion object {
         private val sharedExecutor: ScheduledExecutorService get() = ExecutorHolder.executor
     }
@@ -23,7 +23,6 @@ class ConnectivityChecker: ReusableComponent {
     private val objectLock = Object()
     private var running = false
     private var tickExecutor: ScheduledExecutorService? = null
-
 
     data class PlayerState(
         val iceState: IceState,
@@ -35,7 +34,6 @@ class ConnectivityChecker: ReusableComponent {
     )
 
     private val states: MutableMap<PlayerId, PlayerState> = ConcurrentHashMap()
-
 
     override fun start() {
         synchronized(objectLock) {
@@ -59,7 +57,7 @@ class ConnectivityChecker: ReusableComponent {
         isOfferer: Boolean,
         sendEcho: () -> Unit,
         onConnectionLost: () -> Unit,
-        ) {
+    ) {
         states[playerId] = PlayerState(
             iceState = IceState.NEW,
             isOfferer = isOfferer,
@@ -70,10 +68,10 @@ class ConnectivityChecker: ReusableComponent {
         )
     }
 
-    fun onEchoReceived(playerId: PlayerId, ) {
+    fun onEchoReceived(playerId: PlayerId) {
         states[playerId] = states[playerId]!!.copy(
             iceState = IceState.CONNECTED,
-            lastEchoReceived = LocalDateTime.now()
+            lastEchoReceived = LocalDateTime.now(),
         )
 
         // TODO: Calculate RTT
@@ -100,13 +98,13 @@ class ConnectivityChecker: ReusableComponent {
                     sharedExecutor.submit(state.onConnectionLost)
                 }
                 state.isOfferer -> {
-                        logger.debug { "Initiating echo sequence" }
-                        states[playerId] = state.copy(
-                            iceState = IceState.CHECKING,
-                            lastEchoRequested = now,
-                        )
-                        sharedExecutor.submit(state.requestEcho)
-                    }
+                    logger.debug { "Initiating echo sequence" }
+                    states[playerId] = state.copy(
+                        iceState = IceState.CHECKING,
+                        lastEchoRequested = now,
+                    )
+                    sharedExecutor.submit(state.requestEcho)
+                }
                 !state.isOfferer -> {
                     logger.debug { "Waiting for echo from offerer" }
                     logger.debug { "Initiating echo sequence" }
