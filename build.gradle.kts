@@ -18,7 +18,7 @@ allprojects {
 }
 
 plugins {
-    val kotlinVersion = "1.9.0"
+    val kotlinVersion = "1.9.10"
 
     id("org.jetbrains.kotlin.jvm") version kotlinVersion apply false
     id("org.jetbrains.kotlin.kapt") version kotlinVersion apply false
