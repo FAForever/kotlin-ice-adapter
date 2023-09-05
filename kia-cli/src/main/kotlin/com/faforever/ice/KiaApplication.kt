@@ -56,8 +56,8 @@ class KiaApplication : Callable<Int> {
     override fun call(): Int {
         val iceOptions = IceOptions(userId, userName, gameId, forceRelay, lobbyPort, gpgnetPort, telemetryServer)
         logger.info { "Starting ICE adapter with options: $iceOptions" }
-        val iceAdapter = IceAdapter(iceOptions)
-        iceAdapter.startThread().join()
+        val iceAdapter = IceAdapter(iceOptions, emptyList(), {})
+        iceAdapter.start()
         return 0
     }
 
