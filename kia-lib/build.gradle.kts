@@ -15,6 +15,10 @@ dependencies {
     implementation("dev.failsafe:failsafe:3.3.2")
 
     testImplementation("org.junit.jupiter:junit-jupiter:5.10.0")
+    testImplementation("io.kotest:kotest-runner-junit5:5.6.2")
+    testImplementation("io.kotest:kotest-assertions-core:5.6.2")
+    testImplementation("org.awaitility:awaitility:4.2.0")
+
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     testImplementation("io.mockk:mockk:1.13.7")
     testImplementation("org.slf4j:slf4j-simple:2.0.7")

@@ -1,6 +1,5 @@
 package com.faforever.ice.gpgnet
 
-import com.faforever.ice.IceAdapterDiedException
 import com.faforever.ice.IceOptions
 import com.faforever.ice.util.ExecutorHolder
 import com.faforever.ice.util.ReusableComponent
@@ -21,10 +20,17 @@ private val logger = KotlinLogging.logger {}
  * allowing to listen, intercept and add messages to fulfill ICE connectivity
  */
 class GpgnetProxy(
-    iceOptions: IceOptions
+    iceOptions: IceOptions,
+    private val onFailure: (Throwable) -> Unit,
 ) : ReusableComponent, Closeable {
     companion object {
         private val sharedExecutor: ScheduledExecutorService get() = ExecutorHolder.executor
+    }
+
+    enum class ConnectionState {
+        LISTENING,
+        CONNECTED,
+        DISCONNECTED
     }
 
     private val gpgnetPort = iceOptions.gpgnetPort
@@ -33,7 +39,12 @@ class GpgnetProxy(
     private val outQueue: BlockingQueue<GpgnetMessage> = ArrayBlockingQueue(32, true)
 
     private val objectLock = Object()
+
+    @Volatile
     var closing: Boolean = false
+        private set
+    @Volatile
+    var state: ConnectionState = ConnectionState.DISCONNECTED
         private set
     private var socket: ServerSocket? = null
     private var gameReaderThread: Thread? = null
@@ -54,7 +65,7 @@ class GpgnetProxy(
             } catch (e: IOException) {
                 logger.error(e) { "Couldn't start GpgnetProxy on port $gpgnetPort" }
                 close()
-                throw IceAdapterDiedException("Couldn't start GpgnetProxy on port $gpgnetPort", e)
+                return
             }
         }
 
@@ -63,27 +74,51 @@ class GpgnetProxy(
         logger.info { "GpgnetProxy started" }
     }
 
+    private fun softFail(t: Throwable) {
+        sharedExecutor.submit { onFailure(t) }
+        close()
+    }
+
     private fun setupSocketToGameInstance() {
         // A while loop seems unnecessary overhead, we do not accept multiple connections from different games,
         // nor do we expect multiple connection attempts from the same game
         try {
+            synchronized(objectLock) {
+                state = ConnectionState.LISTENING
+            }
+
             val socket = requireNotNull(socket).accept()
+
+            synchronized(objectLock) {
+                state = ConnectionState.CONNECTED
+            }
 
             gameReaderThread = Thread(
                 { readMessagesIntoQueue(socket) },
                 "readGpgnetMessagesFromGame"
-            ).apply { start() }
+            ).apply {
+                setUncaughtExceptionHandler { _, throwable ->
+                    logger.error(throwable) { "Failure in gameReaderThread" }
+                    softFail(throwable)
+                }
+                start()
+            }
 
             gameWriterThread = Thread(
                 { writeMessagesFromQueue(socket) },
                 "writeGpgnetMessagesToGame"
-            ).apply { start() }
+            ).apply {
+                setUncaughtExceptionHandler { _, throwable ->
+                    logger.error(throwable) { "Failure in gameWriterThread" }
+                    softFail(throwable)
+                }
+                start()
+            }
 
             logger.info { "Connection to game instance established" }
         } catch (e: Exception) {
             logger.error(e) { "Failed to establish connection to game instance" }
-            close()
-            throw IceAdapterDiedException("Failed to establish connection to game instance", e)
+            softFail(e)
         }
     }
 
@@ -134,6 +169,7 @@ class GpgnetProxy(
             if (closing) return
 
             closing = true
+            state = ConnectionState.DISCONNECTED
 
             gameReaderThread?.apply {
                 interrupt()

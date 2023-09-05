@@ -29,7 +29,7 @@ class IceAdapter(
     }
 
     private val objectLock = Object()
-    private val gpgnetProxy = GpgnetProxy(iceOptions)
+    private val gpgnetProxy = GpgnetProxy(iceOptions) { throw it }
     private val lobbyConnectionProxy = LobbyConnectionProxy(iceOptions)
     private val connectivityChecker = ConnectivityChecker()
     private val players: MutableMap<Int, RemotePeerOrchestrator> = ConcurrentHashMap()
