@@ -1,0 +1,25 @@
+name: Build
+on: [push]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+      - name: Get tag or branch
+        id: get_tag_or_branch
+        run: |
+          if echo $GITHUB_REF | grep -Eq '^refs\/tags\/.*'; then
+              echo ::set-output name=TAG_OR_BRANCH::${GITHUB_REF#refs/tags/}
+          else
+              echo ::set-output name=TAG_OR_BRANCH::${GITHUB_REF#refs/heads/}
+          fi
+      - name: Gradle test
+        env:
+          GRADLE_CLI_OPTS: "-Dversion=${{steps.get_tag_or_branch.outputs.TAG_OR_BRANCH}}"
+        run: "chmod +x ./gradlew && ./gradlew ${GRADLE_CLI_OPTS} build"
