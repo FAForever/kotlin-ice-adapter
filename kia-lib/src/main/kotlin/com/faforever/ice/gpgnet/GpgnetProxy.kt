@@ -43,8 +43,6 @@ class GpgnetProxy(
     @Volatile
     var closing: Boolean = false
         private set
-
-    @Volatile
     var state: ConnectionState = ConnectionState.DISCONNECTED
         private set
     private var socket: ServerSocket? = null
@@ -53,7 +51,7 @@ class GpgnetProxy(
 
     fun sendGpgnetMessage(message: GpgnetMessage) = inQueue.add(message)
 
-    fun receiveMessage() = outQueue.take()
+    fun receiveMessage(): GpgnetMessage = outQueue.take()
 
     override fun start() {
         synchronized(objectLock) {

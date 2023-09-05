@@ -26,7 +26,15 @@ class LobbyConnectionProxy(
     private val inQueue: BlockingQueue<ByteArray> = ArrayBlockingQueue(32, true)
 
     private val objectLock = Object()
-    private var closing: Boolean = false
+
+    @Volatile
+    var closing: Boolean = false
+        private set
+
+    @Volatile
+    var active: Boolean = false
+        private set
+
     private var socket: DatagramSocket? = null
     private var gameWriterThread: Thread? = null
 
@@ -43,6 +51,7 @@ class LobbyConnectionProxy(
                 logger.error(e) { "Couldn't start LobbyConnectionProxy" }
                 throw IceAdapterDiedException("Couldn't start LobbyConnectionProxy", e)
             }
+            active = true
         }
 
         setupSocketToGameInstance()
@@ -89,6 +98,7 @@ class LobbyConnectionProxy(
 
         synchronized(objectLock) {
             closing = true
+            active = false
             gameWriterThread?.apply {
                 interrupt()
                 logger.debug { "writeLobbyDataToGame interrupted" }
