@@ -60,7 +60,7 @@ class IceAdapter(
         logger.debug { "joinGame: remotePlayerLogin=$remotePlayerLogin, remotePlayerId=$remotePlayerId" }
 
         val remotePeerOrchestrator = RemotePeerOrchestrator(
-            localPlayerId = iceOptions.userId,
+            iceOptions = iceOptions,
             remotePlayerId = remotePlayerId,
             localOffer = false,
             coturnServers = coturnServers,
@@ -83,7 +83,7 @@ class IceAdapter(
         logger.debug { "connectToPeer: remotePlayerLogin=$remotePlayerLogin, remotePlayerId=$remotePlayerId" }
 
         val remotePeerOrchestrator = RemotePeerOrchestrator(
-            localPlayerId = iceOptions.userId,
+            iceOptions = iceOptions,
             remotePlayerId = remotePlayerId,
             localOffer = offer,
             coturnServers = coturnServers,

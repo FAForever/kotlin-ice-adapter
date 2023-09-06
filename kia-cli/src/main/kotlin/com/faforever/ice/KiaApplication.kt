@@ -53,8 +53,17 @@ class KiaApplication : Callable<Int> {
     )
     private var telemetryServer: String = ""
 
+    @Option(names = ["--allow-host"], description = ["???"])
+    private var allowHost: Boolean = true
+    
+    @Option(names = ["--allow-reflexive"], description = ["???"])
+    private var allowReflexive: Boolean = true
+
+    @Option(names = ["--allow-relay"], description = ["???"])
+    private var allowRelay: Boolean = true
+
     override fun call(): Int {
-        val iceOptions = IceOptions(userId, userName, gameId, forceRelay, lobbyPort, gpgnetPort, telemetryServer)
+        val iceOptions = IceOptions(userId, userName, gameId, forceRelay, lobbyPort, gpgnetPort, telemetryServer, allowHost, allowReflexive, allowRelay)
         logger.info { "Starting ICE adapter with options: $iceOptions" }
         val iceAdapter = IceAdapter(iceOptions, emptyList(), {})
         iceAdapter.start()

@@ -1,5 +1,6 @@
 package com.faforever.ice.ice4j
 
+import com.faforever.ice.IceOptions
 import com.faforever.ice.peering.CoturnServer
 import dev.failsafe.Failsafe
 import dev.failsafe.Timeout
@@ -18,7 +19,7 @@ import java.time.Duration
 private val logger = KotlinLogging.logger {}
 
 class AgentWrapper(
-    private val localPlayerId: Int,
+    private val iceOptions: IceOptions,
     private val remotePlayerId: Int,
     private val localOffer: Boolean,
     private val coturnServers: List<CoturnServer>,
@@ -104,13 +105,13 @@ class AgentWrapper(
                 }
 
                 val candidates = CandidateUtil.packCandidates(
-                    sourceId = localPlayerId,
+                    sourceId = iceOptions.userId,
                     destinationId = remotePlayerId,
                     agent = agent!!,
                     component = it.result,
-                    allowHost = true, // TODO: Make configurable
-                    allowReflexive = true, // TODO: Make configurable
-                    allowRelay = true, // TODO: Make configurable
+                    allowHost = iceOptions.allowHost,
+                    allowReflexive = iceOptions.allowReflexive,
+                    allowRelay = iceOptions.allowRelay,
                 )
                 onCandidatesGathered(candidates)
             }
