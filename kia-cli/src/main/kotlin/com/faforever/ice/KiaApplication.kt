@@ -55,7 +55,7 @@ class KiaApplication : Callable<Int> {
 
     @Option(names = ["--allow-host"], description = ["???"])
     private var allowHost: Boolean = true
-    
+
     @Option(names = ["--allow-reflexive"], description = ["???"])
     private var allowReflexive: Boolean = true
 
