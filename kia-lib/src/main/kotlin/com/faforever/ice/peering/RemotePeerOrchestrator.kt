@@ -13,7 +13,6 @@ import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
-import kotlin.random.Random
 
 private val logger = KotlinLogging.logger {}
 
@@ -29,7 +28,7 @@ class RemotePeerOrchestrator(
         private val executor: ScheduledExecutorService get() = ExecutorHolder.executor
     }
 
-    val udpBridgePort = Random.nextInt(40_000, 60_000)
+    val udpBridgePort: Int? get() = udpSocketBridge?.port
     private val toRemoteQueue: BlockingQueue<ByteArray> = ArrayBlockingQueue(32, true)
 
     private val objectLock = Object()
@@ -54,7 +53,7 @@ class RemotePeerOrchestrator(
                 }
                 this.iceState = IceState.GATHERING
 
-                udpSocketBridge = UdpSocketBridge(toRemoteQueue::put, "player-$remotePlayerId", udpBridgePort)
+                udpSocketBridge = UdpSocketBridge(toRemoteQueue::put, "player-$remotePlayerId")
                     .apply { start() }
                 agent = AgentWrapper(
                     localPlayerId = localPlayerId,
@@ -153,7 +152,13 @@ class RemotePeerOrchestrator(
                     data[0] == 'd'.code.toByte() -> relayToLocalGame(data)
                     // Received echo req/res
                     data[0] == 'e'.code.toByte() -> TODO()
-                    else -> logger.warn { "Received invalid packet, first byte: 0x${data[0]}, length: ${data.size}, as String: ${String(data)}" }
+                    else -> logger.warn {
+                        "Received invalid packet, first byte: 0x${data[0]}, length: ${data.size}, as String: ${
+                            String(
+                                data,
+                            )
+                        }"
+                    }
                 }
             } catch (e: IOException) {
                 logger.warn { "Error while reading from ICE adapter" }

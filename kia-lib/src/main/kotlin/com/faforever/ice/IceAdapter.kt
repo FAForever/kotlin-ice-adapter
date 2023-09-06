@@ -74,7 +74,7 @@ class IceAdapter(
             JoinGame(
                 remotePlayerLogin = remotePlayerLogin,
                 remotePlayerId = remotePlayerId,
-                localDestination(remotePeerOrchestrator.udpBridgePort),
+                localDestination(remotePeerOrchestrator.udpBridgePort!!),
             ),
         )
     }
@@ -97,7 +97,7 @@ class IceAdapter(
             ConnectToPeer(
                 remotePlayerLogin = remotePlayerLogin,
                 remotePlayerId = remotePlayerId,
-                localDestination(remotePeerOrchestrator.udpBridgePort),
+                localDestination(remotePeerOrchestrator.udpBridgePort!!),
             ),
         )
     }

@@ -1,5 +1,6 @@
 package com.faforever.ice.peering
 
+import com.faforever.ice.util.SocketFactory
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.io.Closeable
 import java.io.IOException
@@ -16,11 +17,12 @@ private val logger = KotlinLogging.logger {}
 class UdpSocketBridge(
     private val forwardTo: (ByteArray) -> Unit,
     private val name: String = "unnamed",
-    private val port: Int,
     bufferSize: Int = 65536,
 ) : Closeable {
     private val objectLock = Object()
-    private var started: Boolean = false
+    var started: Boolean = false
+        private set
+    val port: Int? get() = socket?.localPort
     private var closing: Boolean = false
     private var socket: DatagramSocket? = null
     private var readingThread: Thread? = null
@@ -37,7 +39,7 @@ class UdpSocketBridge(
             checkNotClosing()
 
             socket = try {
-                DatagramSocket(port)
+                SocketFactory.createLocalUDPSocket()
             } catch (e: IOException) {
                 logger.error(e) { "Couldn't start UdpSocketBridge $name" }
                 throw e
@@ -54,7 +56,7 @@ class UdpSocketBridge(
     }
 
     @Throws(IOException::class)
-    fun readAndForwardLoop() {
+    private fun readAndForwardLoop() {
         logger.info { "UdpSocketBridge $name is forwarding messages now" }
 
         while (true) {
@@ -63,9 +65,18 @@ class UdpSocketBridge(
             }
 
             val packet = DatagramPacket(buffer, buffer.size)
-            socket!!.receive(packet)
-            logger.trace { "$name: Forwarding ${packet.length} bytes" }
-            forwardTo(buffer.copyOfRange(0, packet.length))
+
+            try {
+                socket!!.receive(packet)
+                logger.trace { "$name: Forwarding ${packet.length} bytes" }
+                forwardTo(buffer.copyOfRange(0, packet.length))
+            } catch (e: Exception) {
+                if (closing) {
+                    return
+                } else {
+                    throw e
+                }
+            }
         }
     }
 
@@ -74,6 +85,7 @@ class UdpSocketBridge(
             if (closing) return
             readingThread?.interrupt()
             closing = true
+            started = false
             socket?.close()
         }
     }
