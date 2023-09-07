@@ -105,11 +105,13 @@ class GpgnetProxyTest {
         assertFalse(sut.closing)
         assertEquals(GpgnetProxy.ConnectionState.CONNECTED, sut.state)
 
-        verify {
-            SocketFactory.createLocalTCPSocket(testTCPPort)
-            serverSocket2.accept()
-            socket2.getInputStream()
-            socket2.getOutputStream()
+        await().untilAsserted {
+            verify {
+                SocketFactory.createLocalTCPSocket(testTCPPort)
+                serverSocket2.accept()
+                socket2.getInputStream()
+                socket2.getOutputStream()
+            }
         }
     }
 
