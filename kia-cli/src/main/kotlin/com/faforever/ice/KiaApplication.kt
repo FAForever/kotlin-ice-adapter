@@ -54,7 +54,16 @@ class KiaApplication : Callable<Int> {
     private var telemetryServer: String = ""
 
     override fun call(): Int {
-        val iceOptions = IceOptions(userId, userName, gameId, forceRelay, lobbyPort, gpgnetPort, telemetryServer)
+        val iceOptions = IceOptions(
+            userId,
+            userName,
+            gameId,
+            forceRelay,
+            rpcPort,
+            lobbyPort,
+            gpgnetPort,
+            telemetryServer,
+        )
         logger.info { "Starting ICE adapter with options: $iceOptions" }
         val iceAdapter = IceAdapter(iceOptions, emptyList(), {})
         iceAdapter.start()
