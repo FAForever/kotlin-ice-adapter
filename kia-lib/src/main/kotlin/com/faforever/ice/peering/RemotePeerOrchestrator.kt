@@ -1,6 +1,5 @@
 package com.faforever.ice.peering
 
-import com.faforever.ice.IceOptions
 import com.faforever.ice.ice4j.AgentWrapper
 import com.faforever.ice.ice4j.CandidatesMessage
 import com.faforever.ice.ice4j.IceState
@@ -18,7 +17,7 @@ import java.util.concurrent.TimeUnit
 private val logger = KotlinLogging.logger {}
 
 class RemotePeerOrchestrator(
-    private val iceOptions: IceOptions,
+    private val localPlayerId: Int,
     private val remotePlayerId: Int,
     private val localOffer: Boolean,
     private val coturnServers: List<CoturnServer>,
@@ -57,7 +56,7 @@ class RemotePeerOrchestrator(
                 udpSocketBridge = UdpSocketBridge(toRemoteQueue::put, "player-$remotePlayerId")
                     .apply { start() }
                 agent = AgentWrapper(
-                    iceOptions = iceOptions,
+                    localPlayerId = localPlayerId,
                     remotePlayerId = remotePlayerId,
                     localOffer = localOffer,
                     coturnServers = coturnServers,

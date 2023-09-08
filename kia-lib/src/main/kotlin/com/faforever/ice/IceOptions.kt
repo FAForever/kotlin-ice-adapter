@@ -9,7 +9,4 @@ data class IceOptions(
     val lobbyPort: Int,
     val gpgnetPort: Int,
     val telemetryServer: String,
-    val allowHost: Boolean,
-    val allowReflexive: Boolean,
-    val allowRelay: Boolean,
 )
