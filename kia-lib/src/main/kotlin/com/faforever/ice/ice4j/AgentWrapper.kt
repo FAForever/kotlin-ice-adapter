@@ -104,20 +104,13 @@ class AgentWrapper(
                     setState(IceState.AWAITING_CANDIDATES)
                 }
 
-                var allowHost = true
-                var allowReflexive = true
-                if (forceRelay) {
-                    allowHost = false
-                    allowReflexive = false
-                }
-
                 val candidates = CandidateUtil.packCandidates(
                     sourceId = localPlayerId,
                     destinationId = remotePlayerId,
                     agent = agent!!,
                     component = it.result,
-                    allowHost = allowHost,
-                    allowReflexive = allowReflexive,
+                    allowHost = !forceRelay,
+                    allowReflexive = !forceRelay,
                     allowRelay = true,
                 )
                 onCandidatesGathered(candidates)
