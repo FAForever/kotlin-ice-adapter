@@ -103,7 +103,7 @@ class AgentWrapper(
                     this.component = it.result
                     setState(IceState.AWAITING_CANDIDATES)
                 }
-                
+
                 var allowHost = true
                 var allowReflexive = true
                 if (forceRelay) {
