@@ -21,6 +21,7 @@ class AgentWrapper(
     private val localPlayerId: Int,
     private val remotePlayerId: Int,
     private val localOffer: Boolean,
+    private val forceRelay: Boolean,
     private val coturnServers: List<CoturnServer>,
     private val onStateChanged: (IceState, IceState) -> Unit,
     private val onCandidatesGathered: (CandidatesMessage) -> Unit,
@@ -108,9 +109,9 @@ class AgentWrapper(
                     destinationId = remotePlayerId,
                     agent = agent!!,
                     component = it.result,
-                    allowHost = true, // TODO: Make configurable
-                    allowReflexive = true, // TODO: Make configurable
-                    allowRelay = true, // TODO: Make configurable
+                    allowHost = !forceRelay,
+                    allowReflexive = !forceRelay,
+                    allowRelay = true,
                 )
                 onCandidatesGathered(candidates)
             }
