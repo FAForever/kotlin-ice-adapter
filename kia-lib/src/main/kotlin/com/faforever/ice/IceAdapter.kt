@@ -25,7 +25,7 @@ class IceAdapter(
     private val iceOptions: IceOptions,
     private val coturnServers: List<CoturnServer>,
     private val onIceCandidatesGathered: (CandidatesMessage) -> Unit,
-) : ControlPlane, ReusableComponent {
+) : ReusableComponent {
 
     private val objectLock = Object()
     var gameState: GameState = GameState.NONE
@@ -76,18 +76,18 @@ class IceAdapter(
         }
     }
 
-    override fun receiveIceCandidates(remotePlayerId: Int, candidatesMessage: CandidatesMessage) {
+    fun receiveIceCandidates(remotePlayerId: Int, candidatesMessage: CandidatesMessage) {
         val orchestrator = players[remotePlayerId] ?: throw IllegalStateException("Unknown remotePlayerId: $remotePlayerId")
         orchestrator.onRemoteCandidatesReceived(candidatesMessage)
     }
 
-    override fun hostGame(mapName: String) {
+    fun hostGame(mapName: String) {
         logger.debug { "hostGame: mapName=$mapName" }
         lobbyStateFuture!!.join()
         gpgnetProxy.sendGpgnetMessage(HostGame(mapName))
     }
 
-    override fun joinGame(remotePlayerLogin: String, remotePlayerId: Int) {
+    fun joinGame(remotePlayerLogin: String, remotePlayerId: Int) {
         logger.debug { "joinGame: remotePlayerLogin=$remotePlayerLogin, remotePlayerId=$remotePlayerId" }
         val remotePeerOrchestrator = RemotePeerOrchestrator(
             localPlayerId = iceOptions.userId,
@@ -114,7 +114,7 @@ class IceAdapter(
         )
     }
 
-    override fun connectToPeer(remotePlayerLogin: String, remotePlayerId: Int, offer: Boolean) {
+    fun connectToPeer(remotePlayerLogin: String, remotePlayerId: Int, offer: Boolean) {
         logger.debug { "connectToPeer: remotePlayerLogin=$remotePlayerLogin, remotePlayerId=$remotePlayerId" }
 
         val remotePeerOrchestrator = RemotePeerOrchestrator(
@@ -142,7 +142,7 @@ class IceAdapter(
         )
     }
 
-    override fun disconnectFromPeer(remotePlayerId: Int) {
+    fun disconnectFromPeer(remotePlayerId: Int) {
         logger.debug { "disconnectFromPeer: remotePlayerId=$remotePlayerId" }
 
         players[remotePlayerId]?.close()
@@ -150,6 +150,10 @@ class IceAdapter(
 
         lobbyStateFuture!!.join()
         gpgnetProxy.sendGpgnetMessage(DisconnectFromPeer(remotePlayerId))
+    }
+
+    fun setLobbyInitMode(lobbyInitMode: String) {
+        TODO("Not yet implemented")
     }
 
     override fun stop() {
@@ -164,8 +168,12 @@ class IceAdapter(
         }
     }
 
-    override fun sendToGpgNet(message: GpgnetMessage) {
+    fun sendToGpgNet(message: GpgnetMessage) {
         logger.debug { "sendToGpgNet: message=$message" }
         gpgnetProxy.sendGpgnetMessage(message)
+    }
+
+    fun setIceServers(iceServers: List<Map<String, Any>>) {
+        TODO("Not yet implemented")
     }
 }

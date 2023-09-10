@@ -14,11 +14,11 @@ import kotlin.concurrent.Volatile
 private val logger = KotlinLogging.logger {}
 
 /**
- * Handles communication between client and adapter, opens a server for the client to connect to
+ * Handles communication between faf client and adapter, opens a server for the client to connect to
  */
 class RPCService(
-    private val rpcPort: Int, 
-    iceAdapter: IceAdapter
+    private val rpcPort: Int,
+    private val iceAdapter: IceAdapter
 ) : ReusableComponent {
     private val objectMapper = ObjectMapper()
     private val rpcHandler: RPCHandler = RPCHandler(iceAdapter)
@@ -35,18 +35,17 @@ class RPCService(
         logger.info { "Created RPC server on port $rpcPort" }
         tcpServer.start()
 
-/*        tcpServer.firstPeer.thenAccept { firstPeer ->
+        tcpServer.firstPeer.thenAccept { firstPeer ->
             firstPeer.onConnectionLost {
-                val gameState: GameState = GpgnetProxy.getGameState()
+                /*val gameState: GameState = GPGNetServer.getGameState()
                 if (gameState === GameState.LAUNCHING) {
                     skipRPCMessages = true
                     logger.warn { "Lost connection to first RPC Peer. GameState: LAUNCHING, NOT STOPPING!" }
                 } else {
-                    logger.info { "Lost connection to first RPC Peer. GameState: $gameState, Stopping adapter..." }
-                    IceAdapter.stop()
-                }
+                    logger.info { "Lost connection to first RPC Peer. GameState: $gameState, Stopping adapter..." }*/
+                    iceAdapter.stop()
             }
-        }*/
+        }
     }
 
     fun onConnectionStateChanged(newState: String?) {

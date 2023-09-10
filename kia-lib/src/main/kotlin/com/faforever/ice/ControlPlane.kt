@@ -11,6 +11,9 @@ interface ControlPlane {
     fun joinGame(remotePlayerLogin: String, remotePlayerId: Int)
     fun connectToPeer(remotePlayerLogin: String, remotePlayerId: Int, offer: Boolean)
     fun disconnectFromPeer(remotePlayerId: Int)
+    fun setLobbyInitMode(lobbyInitMode: String)
+    fun iceMsg(remotePlayerId: Int, candidatesMessage: CandidatesMessage)
     fun sendToGpgNet(message: GpgnetMessage)
-    fun receiveIceCandidates(remotePlayerId: Int, candidatesMessage: CandidatesMessage)
+    fun setIceServers(iceServers: List<Map<String, Any>>)
+    fun quit()
 }

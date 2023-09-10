@@ -1,42 +1,57 @@
 package com.faforever.ice.rpc
 
+import com.faforever.ice.ControlPlane
 import com.faforever.ice.IceAdapter
+import com.faforever.ice.gpgnet.GpgnetMessage
+import com.faforever.ice.ice4j.CandidatesMessage
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
-import io.github.oshai.kotlinlogging.KotlinLogging
-
-private val logger = KotlinLogging.logger {}
 
 /**
- * Handles calls from JsonRPC (the client)
+ * Handles calls from JsonRPC (the faf client)
  */
 class RPCHandler(
     private val iceAdapter: IceAdapter,
-) {
+) : ControlPlane {
     private val objectMapper = ObjectMapper()
 
     init {
         objectMapper.registerModule(JavaTimeModule())
     }
-    
-    fun hostGame(mapName: String) {
+
+    override fun hostGame(mapName: String) {
         iceAdapter.hostGame(mapName)
     }
 
-    fun joinGame(remotePlayerLogin: String, remotePlayerId: Long) {
-        iceAdapter.joinGame(remotePlayerLogin, remotePlayerId.toInt())
+    override fun joinGame(remotePlayerLogin: String, remotePlayerId: Int) {
+        iceAdapter.joinGame(remotePlayerLogin, remotePlayerId)
     }
 
-    fun connectToPeer(remotePlayerLogin: String, remotePlayerId: Long, offer: Boolean) {
-        iceAdapter.connectToPeer(remotePlayerLogin, remotePlayerId.toInt(), offer)
+    override fun connectToPeer(remotePlayerLogin: String, remotePlayerId: Int, offer: Boolean) {
+        iceAdapter.connectToPeer(remotePlayerLogin, remotePlayerId, offer)
     }
 
-    fun disconnectFromPeer(remotePlayerId: Long) {
-        iceAdapter.disconnectFromPeer(remotePlayerId.toInt())
+    override fun disconnectFromPeer(remotePlayerId: Int) {
+        iceAdapter.disconnectFromPeer(remotePlayerId)
     }
 
-    fun setLobbyInitMode(lobbyInitMode: String) {
-        GPGNetServer.lobbyInitMode = LobbyInitMode.getByName(lobbyInitMode)
-        logger.debug { "LobbyInitMode set to $lobbyInitMode" }
+    override fun setLobbyInitMode(lobbyInitMode: String) {
+        iceAdapter.setLobbyInitMode(lobbyInitMode)
+    }
+
+    override fun iceMsg(remotePlayerId: Int, candidatesMessage: CandidatesMessage) {
+        iceAdapter.receiveIceCandidates(remotePlayerId, candidatesMessage)
+    }
+
+    override fun sendToGpgNet(message: GpgnetMessage) {
+        iceAdapter.sendToGpgNet(message)
+    }
+
+    override fun setIceServers(iceServers: List<Map<String, Any>>) {
+        iceAdapter.setIceServers(iceServers)
+    }
+
+    override fun quit() {
+        iceAdapter.stop()
     }
 }
