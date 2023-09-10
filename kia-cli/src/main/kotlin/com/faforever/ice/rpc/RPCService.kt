@@ -18,7 +18,7 @@ private val logger = KotlinLogging.logger {}
  */
 class RPCService(
     private val rpcPort: Int,
-    private val iceAdapter: IceAdapter
+    private val iceAdapter: IceAdapter,
 ) : ReusableComponent {
     private val objectMapper = ObjectMapper()
     private val rpcHandler: RPCHandler = RPCHandler(iceAdapter)
@@ -43,18 +43,18 @@ class RPCService(
                     logger.warn { "Lost connection to first RPC Peer. GameState: LAUNCHING, NOT STOPPING!" }
                 } else {
                     logger.info { "Lost connection to first RPC Peer. GameState: $gameState, Stopping adapter..." }*/
-                    iceAdapter.stop()
+                iceAdapter.stop()
             }
         }
     }
 
-    fun onConnectionStateChanged(newState: String?) {
+    fun onConnectionStateChanged(newState: String) {
         if (!skipRPCMessages) {
             peerOrWait?.sendNotification("onConnectionStateChanged", listOf(newState))
         }
     }
 
-    fun onGpgNetMessageReceived(header: String?, chunks: List<Any?>?) {
+    fun onGpgNetMessageReceived(header: String, chunks: List<Any>) {
         if (!skipRPCMessages) {
             peerOrWait?.sendNotification("onGpgNetMessageReceived", listOf(header, chunks))
         }
@@ -77,7 +77,7 @@ class RPCService(
         }
     }
 
-    fun onIceConnectionStateChanged(localPlayerId: Long, remotePlayerId: Long, state: String?) {
+    fun onIceConnectionStateChanged(localPlayerId: Int, remotePlayerId: Int, state: String) {
         if (!skipRPCMessages) {
             peerOrWait?.sendNotification(
                 "onIceConnectionStateChanged",
@@ -86,7 +86,7 @@ class RPCService(
         }
     }
 
-    fun onConnected(localPlayerId: Long, remotePlayerId: Long, connected: Boolean) {
+    fun onConnected(localPlayerId: Int, remotePlayerId: Int, connected: Boolean) {
         if (!skipRPCMessages) {
             peerOrWait?.sendNotification(
                 "onConnected",
