@@ -25,6 +25,7 @@ class IceAdapter(
     private val iceOptions: IceOptions,
     private val coturnServers: List<CoturnServer>,
     private val onIceCandidatesGathered: (CandidatesMessage) -> Unit,
+    private val onIceAdapterStopped: () -> Unit,
 ) : ReusableComponent {
 
     private val objectLock = Object()
@@ -166,6 +167,7 @@ class IceAdapter(
             players.clear()
             lobbyStateFuture?.cancel(true)
         }
+        onIceAdapterStopped
     }
 
     fun sendToGpgNet(message: GpgnetMessage) {

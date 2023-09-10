@@ -65,10 +65,12 @@ class KiaApplication : Callable<Int> {
         gpgnetPort,
         telemetryServer,
     )
-    private val iceAdapter: IceAdapter = IceAdapter(iceOptions, emptyList(), this::callOnIceMsg)
+    private val iceAdapter: IceAdapter = IceAdapter(iceOptions, emptyList(), this::callOnIceMsg, this::callStop)
     private val rpcService: RPCService = RPCService(rpcPort, iceAdapter)
 
     private fun callOnIceMsg(candidatesMessage: CandidatesMessage) = rpcService.onIceMsg(candidatesMessage)
+
+    private fun callStop() = rpcService.stop()
 
     override fun call(): Int {
         logger.info { "Starting ICE adapter with options: $iceOptions" }
