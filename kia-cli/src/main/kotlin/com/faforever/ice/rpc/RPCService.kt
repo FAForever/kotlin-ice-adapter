@@ -1,6 +1,6 @@
 package com.faforever.ice.rpc
 
-import com.faforever.ice.IceOptions
+import com.faforever.ice.IceAdapter
 import com.faforever.ice.ice4j.CandidatesMessage
 import com.faforever.ice.util.ReusableComponent
 import com.fasterxml.jackson.core.JsonProcessingException
@@ -16,10 +16,12 @@ private val logger = KotlinLogging.logger {}
 /**
  * Handles communication between client and adapter, opens a server for the client to connect to
  */
-class RPCService(iceOptions: IceOptions) : ReusableComponent {
+class RPCService(
+    private val rpcPort: Int, 
+    iceAdapter: IceAdapter
+) : ReusableComponent {
     private val objectMapper = ObjectMapper()
-    private val rpcPort = iceOptions.rpcPort
-    private val rpcHandler: RPCHandler = RPCHandler()
+    private val rpcHandler: RPCHandler = RPCHandler(iceAdapter)
     private val tcpServer: TcpServer = TcpServer(rpcPort, rpcHandler)
 
     @Volatile

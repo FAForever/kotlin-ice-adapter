@@ -1,5 +1,6 @@
 package com.faforever.ice
 
+import com.faforever.ice.rpc.RPCService
 import io.github.oshai.kotlinlogging.KotlinLogging
 import picocli.CommandLine
 import picocli.CommandLine.Command
@@ -66,6 +67,7 @@ class KiaApplication : Callable<Int> {
         )
         logger.info { "Starting ICE adapter with options: $iceOptions" }
         val iceAdapter = IceAdapter(iceOptions, emptyList(), {})
+        val rpcService = RPCService(rpcPort, iceAdapter)
         iceAdapter.start()
         return 0
     }
