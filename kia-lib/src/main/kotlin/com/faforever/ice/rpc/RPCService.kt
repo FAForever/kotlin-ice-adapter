@@ -1,20 +1,15 @@
 package com.faforever.ice.rpc
 
-import com.faforever.ice.IceAdapter
 import com.faforever.ice.IceOptions
-import com.faforever.ice.game.GameState
-import com.faforever.ice.gpgnet.GpgnetProxy
 import com.faforever.ice.ice4j.CandidatesMessage
 import com.faforever.ice.util.ReusableComponent
 import com.fasterxml.jackson.core.JsonProcessingException
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
-import io.github.oshai.kotlinlogging.KotlinLogging
-import java.util.*
-import kotlin.concurrent.Volatile
 import com.nbarraille.jjsonrpc.JJsonPeer
 import com.nbarraille.jjsonrpc.TcpServer
-
+import io.github.oshai.kotlinlogging.KotlinLogging
+import kotlin.concurrent.Volatile
 
 private val logger = KotlinLogging.logger {}
 
@@ -26,6 +21,7 @@ class RPCService(iceOptions: IceOptions) : ReusableComponent {
     private val rpcPort = iceOptions.rpcPort
     private val rpcHandler: RPCHandler = RPCHandler()
     private val tcpServer: TcpServer = TcpServer(rpcPort, rpcHandler)
+
     @Volatile
     private var skipRPCMessages = false
 
@@ -34,9 +30,9 @@ class RPCService(iceOptions: IceOptions) : ReusableComponent {
     }
 
     override fun start() {
-        logger.info{"Created RPC server on port $rpcPort"}
+        logger.info { "Created RPC server on port $rpcPort" }
         tcpServer.start()
-        
+
 /*        tcpServer.firstPeer.thenAccept { firstPeer ->
             firstPeer.onConnectionLost {
                 val gameState: GameState = GpgnetProxy.getGameState()
@@ -71,8 +67,8 @@ class RPCService(iceOptions: IceOptions) : ReusableComponent {
                     listOf(
                         candidatesMessage.sourceId,
                         candidatesMessage.destinationId,
-                        objectMapper.writeValueAsString(candidatesMessage)
-                    )
+                        objectMapper.writeValueAsString(candidatesMessage),
+                    ),
                 )
             } catch (e: JsonProcessingException) {
                 throw RuntimeException(e)
@@ -84,7 +80,7 @@ class RPCService(iceOptions: IceOptions) : ReusableComponent {
         if (!skipRPCMessages) {
             peerOrWait?.sendNotification(
                 "onIceConnectionStateChanged",
-                listOf(localPlayerId, remotePlayerId, state)
+                listOf(localPlayerId, remotePlayerId, state),
             )
         }
     }
@@ -93,7 +89,7 @@ class RPCService(iceOptions: IceOptions) : ReusableComponent {
         if (!skipRPCMessages) {
             peerOrWait?.sendNotification(
                 "onConnected",
-                listOf(localPlayerId, remotePlayerId, connected)
+                listOf(localPlayerId, remotePlayerId, connected),
             )
         }
     }
@@ -117,4 +113,3 @@ class RPCService(iceOptions: IceOptions) : ReusableComponent {
         tcpServer.stop()
     }
 }
-
