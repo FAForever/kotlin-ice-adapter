@@ -1,5 +1,6 @@
 package com.faforever.ice
 
+import com.faforever.ice.ice4j.CandidatesMessage
 import com.faforever.ice.rpc.RPCService
 import io.github.oshai.kotlinlogging.KotlinLogging
 import picocli.CommandLine
@@ -54,21 +55,25 @@ class KiaApplication : Callable<Int> {
     )
     private var telemetryServer: String = ""
 
+    private val iceOptions = IceOptions(
+        userId,
+        userName,
+        gameId,
+        forceRelay,
+        rpcPort,
+        lobbyPort,
+        gpgnetPort,
+        telemetryServer,
+    )
+    private val iceAdapter: IceAdapter = IceAdapter(iceOptions, emptyList(), this::callOnIceMsg)
+    private val rpcService: RPCService = RPCService(rpcPort, iceAdapter)
+
+    private fun callOnIceMsg(candidatesMessage: CandidatesMessage) = rpcService.onIceMsg(candidatesMessage)
+
     override fun call(): Int {
-        val iceOptions = IceOptions(
-            userId,
-            userName,
-            gameId,
-            forceRelay,
-            rpcPort,
-            lobbyPort,
-            gpgnetPort,
-            telemetryServer,
-        )
         logger.info { "Starting ICE adapter with options: $iceOptions" }
-        val iceAdapter = IceAdapter(iceOptions, emptyList(), {})
-        val rpcService = RPCService(rpcPort, iceAdapter)
         iceAdapter.start()
+        rpcService.start()
         return 0
     }
 
