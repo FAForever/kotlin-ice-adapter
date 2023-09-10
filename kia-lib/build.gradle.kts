@@ -12,7 +12,6 @@ dependencies {
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.15.2")
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.15.2")
     implementation("com.google.guava:guava:32.1.2-jre")
-    implementation("com.github.faforever:JJsonRpc:37669e0fed")
     implementation("dev.failsafe:failsafe:3.3.2")
 
     testImplementation("org.junit.jupiter:junit-jupiter:5.10.0")

@@ -13,7 +13,6 @@ import com.faforever.ice.gpgnet.GpgnetProxy
 import com.faforever.ice.ice4j.CandidatesMessage
 import com.faforever.ice.peering.CoturnServer
 import com.faforever.ice.peering.RemotePeerOrchestrator
-import com.faforever.ice.rpc.RPCService
 import com.faforever.ice.util.ReusableComponent
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.net.InetAddress
@@ -38,7 +37,6 @@ class IceAdapter(
         onFailure = { throw it },
     )
     private val lobbyConnectionProxy = LobbyConnectionProxy(iceOptions)
-    private val rpcService = RPCService(iceOptions)
     private val connectivityChecker = ConnectivityChecker()
     private val players: MutableMap<Int, RemotePeerOrchestrator> = ConcurrentHashMap()
 //    private val telemetryClient = TelemetryClient(iceOptions, objectMapper)
