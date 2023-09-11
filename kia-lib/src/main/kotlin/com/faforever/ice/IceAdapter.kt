@@ -1,6 +1,8 @@
 package com.faforever.ice
 
+import com.faforever.ice.game.GameState
 import com.faforever.ice.game.LobbyConnectionProxy
+import com.faforever.ice.game.LobbyInitMode
 import com.faforever.ice.gpgnet.GpgnetMessage
 import com.faforever.ice.gpgnet.GpgnetMessage.ConnectToPeer
 import com.faforever.ice.gpgnet.GpgnetMessage.DisconnectFromPeer
@@ -17,6 +19,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.net.InetAddress
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 
 private val logger = KotlinLogging.logger {}
@@ -32,19 +35,53 @@ class IceAdapter(
     }
 
     private val objectLock = Object()
-    private val gpgnetProxy = GpgnetProxy(iceOptions) { throw it }
+    var gameState: GameState = GameState.NONE
+        private set
+    private var lobbyStateFuture: CompletableFuture<Unit>? = null
+    private val gpgnetProxy = GpgnetProxy(
+        iceOptions = iceOptions,
+        onMessage = ::onGpgnetMessage,
+        onFailure = { throw it },
+    )
     private val lobbyConnectionProxy = LobbyConnectionProxy(iceOptions)
     private val connectivityChecker = ConnectivityChecker()
     private val players: MutableMap<Int, RemotePeerOrchestrator> = ConcurrentHashMap()
 //    private val telemetryClient = TelemetryClient(iceOptions, objectMapper)
 
     override fun start() {
+        lobbyStateFuture = CompletableFuture<Unit>()
         gpgnetProxy.start()
         lobbyConnectionProxy.start()
         connectivityChecker.start()
     }
 
     private fun localDestination(port: Int) = "${InetAddress.getLoopbackAddress().hostAddress}:$port"
+
+    private fun onGpgnetMessage(message: GpgnetMessage) {
+        when (message) {
+            is GpgnetMessage.GameState -> {
+                logger.info { "Game State changed from $gameState -> ${message.gameState}" }
+
+                if (message.gameState == GameState.IDLE) {
+                    gpgnetProxy.sendGpgnetMessage(
+                        GpgnetMessage.CreateLobby(
+                            lobbyInitMode = LobbyInitMode.NORMAL, // TODO: Where does it come from?
+                            lobbyPort = iceOptions.lobbyPort,
+                            localPlayerName = iceOptions.userName,
+                            localPlayerId = iceOptions.userId,
+                        ),
+                    )
+                } else if (message.gameState == GameState.LOBBY) {
+                    lobbyStateFuture!!.complete(Unit)
+                }
+
+                gameState = message.gameState
+            }
+            is GpgnetMessage.GameEnded -> {
+                gameState = GameState.ENDED
+            }
+        }
+    }
 
     override fun receiveIceCandidates(remotePlayerId: Int, candidatesMessage: CandidatesMessage) {
         val orchestrator = players[remotePlayerId] ?: throw IllegalStateException("Unknown remotePlayerId: $remotePlayerId")
@@ -53,12 +90,12 @@ class IceAdapter(
 
     override fun hostGame(mapName: String) {
         logger.debug { "hostGame: mapName=$mapName" }
+        lobbyStateFuture!!.join()
         gpgnetProxy.sendGpgnetMessage(HostGame(mapName))
     }
 
     override fun joinGame(remotePlayerLogin: String, remotePlayerId: Int) {
         logger.debug { "joinGame: remotePlayerLogin=$remotePlayerLogin, remotePlayerId=$remotePlayerId" }
-
         val remotePeerOrchestrator = RemotePeerOrchestrator(
             localPlayerId = iceOptions.userId,
             remotePlayerId = remotePlayerId,
@@ -71,6 +108,7 @@ class IceAdapter(
 
         players[remotePlayerId] = remotePeerOrchestrator
 
+        lobbyStateFuture!!.join()
         gpgnetProxy.sendGpgnetMessage(
             JoinGame(
                 remotePlayerLogin = remotePlayerLogin,
@@ -95,6 +133,7 @@ class IceAdapter(
 
         players[remotePlayerId] = remotePeerOrchestrator
 
+        lobbyStateFuture!!.join()
         gpgnetProxy.sendGpgnetMessage(
             ConnectToPeer(
                 remotePlayerLogin = remotePlayerLogin,
@@ -110,6 +149,7 @@ class IceAdapter(
         players[remotePlayerId]?.close()
         players.remove(remotePlayerId)
 
+        lobbyStateFuture!!.join()
         gpgnetProxy.sendGpgnetMessage(DisconnectFromPeer(remotePlayerId))
     }
 
@@ -121,6 +161,7 @@ class IceAdapter(
             connectivityChecker.stop()
             players.values.forEach { it.close() }
             players.clear()
+            lobbyStateFuture?.cancel(true)
         }
     }
 

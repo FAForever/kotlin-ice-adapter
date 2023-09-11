@@ -1,6 +1,8 @@
 package com.faforever.ice
 
+import com.faforever.ice.game.GameState
 import com.faforever.ice.gpgnet.FakeGameClient
+import com.faforever.ice.gpgnet.GpgnetMessage
 import com.faforever.ice.ice4j.CandidatesMessage
 import com.faforever.ice.peering.CoturnServer
 import org.junit.jupiter.api.Assertions.assertArrayEquals
@@ -40,6 +42,9 @@ class IceAdapterIT {
         ).apply { start() }
 
         val client1 = FakeGameClient(5002, 5001, 1)
+        client1.sendGpgnetMessage(GpgnetMessage.GameState(GameState.IDLE))
+        client1.sendGpgnetMessage(GpgnetMessage.GameState(GameState.LOBBY))
+
         adapter1.connectToPeer("User 2", 2, false)
 
         val adapter2 = IceAdapter(
@@ -56,6 +61,8 @@ class IceAdapterIT {
             candidatesTestForwarder::onCandidatesFromA2,
         ).apply { start() }
         val client2 = FakeGameClient(6002, 6001, 2)
+        client2.sendGpgnetMessage(GpgnetMessage.GameState(GameState.IDLE))
+        client2.sendGpgnetMessage(GpgnetMessage.GameState(GameState.LOBBY))
 
         candidatesTestForwarder.adapter1 = adapter1
         candidatesTestForwarder.adapter2 = adapter2

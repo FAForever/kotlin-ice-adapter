@@ -15,10 +15,15 @@ class FakeGameClient(
 ) {
     private var proxyLobbyPort: Int? = null
     private val gpgnetSocket = Socket(InetAddress.getLoopbackAddress().hostAddress, gpgNetPort)
+    private val faStreamWriter = FaStreamWriter(gpgnetSocket.getOutputStream())
     private val lobbySocket = SocketFactory.createLocalUDPSocket(gameLobbyPort)
 
     fun sendLobbyData(data: ByteArray) {
         lobbySocket.send(DatagramPacket(data, 0, data.size, InetAddress.getLoopbackAddress(), proxyLobbyPort!!))
+    }
+
+    fun sendGpgnetMessage(message: GpgnetMessage) {
+        faStreamWriter.writeMessage(message)
     }
 
     fun receiveLobbyData(): ByteArray {
@@ -36,7 +41,9 @@ class FakeGameClient(
                         val message = faStream.readMessage()
                         when (message) {
                             is GpgnetMessage.JoinGame -> proxyLobbyPort = message.destination.split(":").last().toInt()
-                            is GpgnetMessage.ConnectToPeer -> proxyLobbyPort = message.destination.split(":").last().toInt()
+                            is GpgnetMessage.ConnectToPeer ->
+                                proxyLobbyPort =
+                                    message.destination.split(":").last().toInt()
                         }
                         logger.debug { "Received GpgNetMessages >>> $message" }
                     }

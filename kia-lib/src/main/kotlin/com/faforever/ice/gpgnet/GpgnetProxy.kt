@@ -21,6 +21,7 @@ private val logger = KotlinLogging.logger {}
  */
 class GpgnetProxy(
     iceOptions: IceOptions,
+    private val onMessage: (GpgnetMessage) -> Unit,
     private val onFailure: (Throwable) -> Unit,
 ) : ReusableComponent, Closeable {
     companion object {
@@ -36,7 +37,6 @@ class GpgnetProxy(
     private val gpgnetPort = iceOptions.gpgnetPort
 
     private val inQueue: BlockingQueue<GpgnetMessage> = ArrayBlockingQueue(32, true)
-    private val outQueue: BlockingQueue<GpgnetMessage> = ArrayBlockingQueue(32, true)
 
     private val objectLock = Object()
 
@@ -51,13 +51,10 @@ class GpgnetProxy(
 
     fun sendGpgnetMessage(message: GpgnetMessage) = inQueue.add(message)
 
-    fun receiveMessage(): GpgnetMessage = outQueue.take()
-
     override fun start() {
         synchronized(objectLock) {
             closing = false
             inQueue.clear()
-            outQueue.clear()
 
             socket = try {
                 SocketFactory.createLocalTCPSocket(gpgnetPort)
@@ -129,7 +126,7 @@ class GpgnetProxy(
                 while (!closing) {
                     try {
                         val message = reader.readMessage()
-                        outQueue.put(message)
+                        sharedExecutor.submit { onMessage(message) }
                     } catch (e: InterruptedException) {
                         if (closing) {
                             return

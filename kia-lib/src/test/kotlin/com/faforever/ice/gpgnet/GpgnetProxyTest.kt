@@ -23,6 +23,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import java.io.OutputStream
 import java.net.InetAddress
 import java.net.Socket
+import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.CountDownLatch
 
 @ExtendWith(MockKExtension::class)
@@ -35,6 +36,7 @@ class GpgnetProxyTest {
     private val testTCPPort = 5000
     private val testMessage = GpgnetMessage.HostGame("myMap")
 
+    private var onMessage: (GpgnetMessage) -> Unit = {}
     private var onFailure: (Throwable) -> Unit = {}
 
     @BeforeEach
@@ -42,7 +44,11 @@ class GpgnetProxyTest {
         onFailure = {}
         every { iceOptions.gpgnetPort } returns testTCPPort
 
-        sut = GpgnetProxy(iceOptions) { onFailure(it) }
+        sut = GpgnetProxy(
+            iceOptions = iceOptions,
+            onMessage = { onMessage(it) },
+            onFailure = { onFailure(it) },
+        )
     }
 
     @AfterEach
@@ -138,6 +144,9 @@ class GpgnetProxyTest {
 
     @Test
     fun `it should receive GPGnet messages`() {
+        val messageQueue = ArrayBlockingQueue<GpgnetMessage>(32)
+        onMessage = { messageQueue.put(it) }
+
         sut.start()
 
         Socket(InetAddress.getLoopbackAddress(), testTCPPort).use { tcpSocket ->
@@ -148,7 +157,7 @@ class GpgnetProxyTest {
                 }
             }
 
-            val result = sut.receiveMessage()
+            val result = messageQueue.take()
             assertEquals(testMessage, result)
         }
     }
