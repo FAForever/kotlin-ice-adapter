@@ -1,7 +1,7 @@
 package com.faforever.ice
 
 import com.faforever.ice.ice4j.CandidatesMessage
-import com.faforever.ice.rpc.RPCService
+import com.faforever.ice.rpc.RpcService
 import io.github.oshai.kotlinlogging.KotlinLogging
 import picocli.CommandLine
 import picocli.CommandLine.Command
@@ -66,7 +66,7 @@ class KiaApplication : Callable<Int> {
         telemetryServer,
     )
     private val iceAdapter: IceAdapter = IceAdapter(iceOptions, emptyList(), this::callOnIceMsg, this::callStop)
-    private val rpcService: RPCService = RPCService(rpcPort, iceAdapter)
+    private val rpcService: RpcService = RpcService(rpcPort, iceAdapter)
 
     private fun callOnIceMsg(candidatesMessage: CandidatesMessage) = rpcService.onIceMsg(candidatesMessage)
 

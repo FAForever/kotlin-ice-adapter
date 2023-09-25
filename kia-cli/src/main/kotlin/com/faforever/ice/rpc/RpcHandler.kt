@@ -5,19 +5,14 @@ import com.faforever.ice.IceAdapter
 import com.faforever.ice.gpgnet.GpgnetMessage
 import com.faforever.ice.ice4j.CandidatesMessage
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 
 /**
  * Handles calls from JsonRPC (the faf client)
  */
-class RPCHandler(
+class RpcHandler(
     private val iceAdapter: IceAdapter,
+    private val objectMapper: ObjectMapper,
 ) : ControlPlane {
-    private val objectMapper = ObjectMapper()
-
-    init {
-        objectMapper.registerModule(JavaTimeModule())
-    }
 
     override fun hostGame(mapName: String) {
         iceAdapter.hostGame(mapName)

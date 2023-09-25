@@ -3,7 +3,6 @@ package com.faforever.ice.rpc
 import com.faforever.ice.IceAdapter
 import com.faforever.ice.ice4j.CandidatesMessage
 import com.faforever.ice.util.ReusableComponent
-import com.fasterxml.jackson.core.JsonProcessingException
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.nbarraille.jjsonrpc.JJsonPeer
@@ -16,20 +15,18 @@ private val logger = KotlinLogging.logger {}
 /**
  * Handles communication between faf client and adapter, opens a server for the client to connect to
  */
-class RPCService(
+class RpcService(
     private val rpcPort: Int,
     private val iceAdapter: IceAdapter,
 ) : ReusableComponent {
-    private val objectMapper = ObjectMapper()
-    private val rpcHandler: RPCHandler = RPCHandler(iceAdapter)
+    private val objectMapper: ObjectMapper = ObjectMapper().apply {
+        registerModule(JavaTimeModule())
+    }
+    private val rpcHandler: RpcHandler = RpcHandler(iceAdapter, objectMapper)
     private val tcpServer: TcpServer = TcpServer(rpcPort, rpcHandler)
 
     @Volatile
     private var skipRPCMessages = false
-
-    init {
-        objectMapper.registerModule(JavaTimeModule())
-    }
 
     override fun start() {
         logger.info { "Created RPC server on port $rpcPort" }
@@ -37,12 +34,7 @@ class RPCService(
 
         tcpServer.firstPeer.thenAccept { firstPeer ->
             firstPeer.onConnectionLost {
-                /*val gameState: GameState = GPGNetServer.getGameState()
-                if (gameState === GameState.LAUNCHING) {
-                    skipRPCMessages = true
-                    logger.warn { "Lost connection to first RPC Peer. GameState: LAUNCHING, NOT STOPPING!" }
-                } else {
-                    logger.info { "Lost connection to first RPC Peer. GameState: $gameState, Stopping adapter..." }*/
+                logger.info { "Lost connection to first RPC Peer. Stopping adapter..." }
                 iceAdapter.stop()
             }
         }
@@ -62,18 +54,14 @@ class RPCService(
 
     fun onIceMsg(candidatesMessage: CandidatesMessage) {
         if (!skipRPCMessages) {
-            try {
-                peerOrWait?.sendNotification(
-                    "onIceMsg",
-                    listOf(
-                        candidatesMessage.sourceId,
-                        candidatesMessage.destinationId,
-                        objectMapper.writeValueAsString(candidatesMessage),
-                    ),
-                )
-            } catch (e: JsonProcessingException) {
-                throw RuntimeException(e)
-            }
+            peerOrWait?.sendNotification(
+                "onIceMsg",
+                listOf(
+                    candidatesMessage.sourceId,
+                    candidatesMessage.destinationId,
+                    objectMapper.writeValueAsString(candidatesMessage),
+                ),
+            )
         }
     }
 
@@ -101,13 +89,11 @@ class RPCService(
          *
          * @return the currently connected peer (the client)
          */
-        get() {
-            try {
-                return tcpServer.firstPeer.get()
-            } catch (e: Exception) {
-                logger.error(e) { "Error on fetching first peer" }
-            }
-            return null
+        get() = try {
+            tcpServer.firstPeer.get()
+        } catch (e: Exception) {
+            logger.error(e) { "Error on fetching first peer" }
+            null
         }
 
     override fun stop() {
