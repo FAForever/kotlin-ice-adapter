@@ -30,7 +30,7 @@ class ConnectivityCheckerTest {
     private lateinit var connectivityCheckable: ConnectivityCheckable
 
     @BeforeEach
-    fun beforeEach()  {
+    fun beforeEach() {
         every { mockClock.instant() } returns Instant.now()
         every { mockClock.zone } returns ZoneOffset.UTC
 

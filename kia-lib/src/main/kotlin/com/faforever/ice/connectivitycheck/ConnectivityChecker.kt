@@ -80,7 +80,7 @@ class ConnectivityChecker(
                     }
 
                     Duration.between(connectionState.lastEchoRequested, now).seconds > connectionEchoPendingSeconds &&
-                    Duration.between(connectionState.lastEchoRequested, connectionState.lastEchoReceived).seconds < connectionEchoPendingSeconds -> ECHO_REQUIRED.also {
+                        Duration.between(connectionState.lastEchoRequested, connectionState.lastEchoReceived).seconds < connectionEchoPendingSeconds -> ECHO_REQUIRED.also {
                         logger.trace { "[$connectivityCheckable] Echo waiting time within threshold, keep waiting" }
                     }
 
@@ -145,7 +145,7 @@ class ConnectivityChecker(
                         lastEchoRequested = now,
                     )
 
-                    if(connectivityCheckable.isOfferer) {
+                    if (connectivityCheckable.isOfferer) {
                         logger.debug { "Initiating echo sequence with $connectivityCheckable" }
                         sharedExecutor.submit(connectivityCheckable::sendEcho)
                     } else {

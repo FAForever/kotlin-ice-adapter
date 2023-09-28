@@ -16,7 +16,6 @@ import com.faforever.ice.peering.RemotePeerOrchestrator
 import com.faforever.ice.util.ReusableComponent
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.net.InetAddress
-import java.time.Clock
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 
