@@ -1,5 +1,6 @@
 package com.faforever.ice
 
+import com.faforever.ice.gpgnet.GpgnetMessage
 import com.faforever.ice.ice4j.CandidatesMessage
 import com.faforever.ice.rpc.RpcService
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -65,12 +66,29 @@ class KiaApplication : Callable<Int> {
         gpgnetPort,
         telemetryServer,
     )
-    private val iceAdapter: IceAdapter = IceAdapter(iceOptions, emptyList(), this::callOnIceMsg, this::callStop)
+    private val iceAdapter: IceAdapter = IceAdapter(
+        iceOptions,
+        emptyList(),
+        this::onConnectionStateChanged,
+        this::onGpgNetMessageReceived,
+        this::onIceMsg,
+        this::onIceConnectionStateChanged,
+        this::onConnected,
+        this::onIceAdapterStopped,
+    )
     private val rpcService: RpcService = RpcService(rpcPort, iceAdapter)
 
-    private fun callOnIceMsg(candidatesMessage: CandidatesMessage) = rpcService.onIceMsg(candidatesMessage)
+    private fun onConnectionStateChanged(newState: String) = rpcService.onConnectionStateChanged(newState)
 
-    private fun callStop() = rpcService.stop()
+    private fun onGpgNetMessageReceived(message: GpgnetMessage) = rpcService.onGpgNetMessageReceived(message)
+
+    private fun onIceMsg(candidatesMessage: CandidatesMessage) = rpcService.onIceMsg(candidatesMessage)
+
+    private fun onIceConnectionStateChanged(localPlayerId: Int, remotePlayerId: Int, state: String) = rpcService.onIceConnectionStateChanged(localPlayerId, remotePlayerId, state)
+
+    private fun onConnected(localPlayerId: Int, remotePlayerId: Int, connected: Boolean) = rpcService.onConnected(localPlayerId, remotePlayerId, connected)
+
+    private fun onIceAdapterStopped() = rpcService.stop()
 
     override fun call(): Int {
         logger.info { "Starting ICE adapter with options: $iceOptions" }

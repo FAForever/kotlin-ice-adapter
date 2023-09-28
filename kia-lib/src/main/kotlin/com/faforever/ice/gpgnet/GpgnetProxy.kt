@@ -21,6 +21,7 @@ private val logger = KotlinLogging.logger {}
  */
 class GpgnetProxy(
     iceOptions: IceOptions,
+    private val onGameConnectionStateChanged: (String) -> Unit,
     private val onMessage: (GpgnetMessage) -> Unit,
     private val onFailure: (Throwable) -> Unit,
 ) : ReusableComponent, Closeable {
@@ -87,6 +88,7 @@ class GpgnetProxy(
 
             synchronized(objectLock) {
                 state = ConnectionState.CONNECTED
+                onGameConnectionStateChanged("Connected")
             }
 
             gameReaderThread = Thread(
@@ -172,6 +174,7 @@ class GpgnetProxy(
 
             closing = true
             state = ConnectionState.DISCONNECTED
+            onGameConnectionStateChanged("Disconnected")
 
             gameReaderThread?.apply {
                 interrupt()

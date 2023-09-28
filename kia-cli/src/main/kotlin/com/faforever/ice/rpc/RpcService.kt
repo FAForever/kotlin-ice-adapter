@@ -1,6 +1,7 @@
 package com.faforever.ice.rpc
 
 import com.faforever.ice.IceAdapter
+import com.faforever.ice.gpgnet.GpgnetMessage
 import com.faforever.ice.ice4j.CandidatesMessage
 import com.faforever.ice.util.ReusableComponent
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -46,9 +47,12 @@ class RpcService(
         }
     }
 
-    fun onGpgNetMessageReceived(header: String, chunks: List<Any>) {
+    fun onGpgNetMessageReceived(message: GpgnetMessage) {
         if (!skipRPCMessages) {
-            peerOrWait?.sendNotification("onGpgNetMessageReceived", listOf(header, chunks))
+            peerOrWait?.sendNotification(
+                "onGpgNetMessageReceived",
+                listOf(message.command, message.args),
+            )
         }
     }
 

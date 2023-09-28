@@ -24,7 +24,11 @@ private val logger = KotlinLogging.logger {}
 class IceAdapter(
     private val iceOptions: IceOptions,
     private val coturnServers: List<CoturnServer>,
+    onGameConnectionStateChanged: (String) -> Unit,
+    private val onGpgNetMessageReceived: (GpgnetMessage) -> Unit,
     private val onIceCandidatesGathered: (CandidatesMessage) -> Unit,
+    private val onIceConnectionStateChanged: (Int, Int, String) -> Unit,
+    private val onConnected: (Int, Int, Boolean) -> Unit,
     private val onIceAdapterStopped: () -> Unit,
 ) : ReusableComponent {
 
@@ -34,6 +38,7 @@ class IceAdapter(
     private var lobbyStateFuture: CompletableFuture<Unit>? = null
     private val gpgnetProxy = GpgnetProxy(
         iceOptions = iceOptions,
+        onGameConnectionStateChanged = onGameConnectionStateChanged,
         onMessage = ::onGpgnetMessage,
         onFailure = { throw it },
     )
@@ -75,6 +80,7 @@ class IceAdapter(
                 gameState = GameState.ENDED
             }
         }
+        onGpgNetMessageReceived(message)
     }
 
     fun receiveIceCandidates(remotePlayerId: Int, candidatesMessage: CandidatesMessage) {
@@ -98,6 +104,7 @@ class IceAdapter(
             coturnServers = coturnServers,
             relayToLocalGame = lobbyConnectionProxy::sendData,
             publishLocalCandidates = onIceCandidatesGathered,
+            publishIceConnectionState = onIceConnectionStateChanged,
         )
 
         val connectivityCheckHandler = connectivityChecker.registerPlayer(remotePeerOrchestrator)
@@ -126,6 +133,7 @@ class IceAdapter(
             coturnServers = coturnServers,
             relayToLocalGame = lobbyConnectionProxy::sendData,
             publishLocalCandidates = onIceCandidatesGathered,
+            publishIceConnectionState = onIceConnectionStateChanged,
         )
 
         val connectivityCheckHandler = connectivityChecker.registerPlayer(remotePeerOrchestrator)
@@ -167,7 +175,7 @@ class IceAdapter(
             players.clear()
             lobbyStateFuture?.cancel(true)
         }
-        onIceAdapterStopped
+        onIceAdapterStopped()
     }
 
     fun sendToGpgNet(message: GpgnetMessage) {

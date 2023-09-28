@@ -27,6 +27,7 @@ class RemotePeerOrchestrator(
     private val coturnServers: List<CoturnServer>,
     private val relayToLocalGame: (ByteArray) -> Unit,
     private val publishLocalCandidates: (CandidatesMessage) -> Unit,
+    private val publishIceConnectionState: (Int, Int, String) -> Unit,
 ) : Closeable, ConnectivityCheckable {
     companion object {
         private val executor: ScheduledExecutorService get() = ExecutorHolder.executor
@@ -76,6 +77,8 @@ class RemotePeerOrchestrator(
 
     private fun onIceStateChange(oldState: IceState, newState: IceState) {
         if (closing) return
+        
+        publishIceConnectionState(localPlayerId, remotePlayerId, newState.message)
 
         when {
             newState == IceState.DISCONNECTED -> onConnectionLost()
