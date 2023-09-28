@@ -1,5 +1,6 @@
 package com.faforever.ice
 
+import com.faforever.ice.connectivitycheck.ConnectivityChecker
 import com.faforever.ice.game.GameState
 import com.faforever.ice.game.LobbyConnectionProxy
 import com.faforever.ice.game.LobbyInitMode
@@ -10,15 +11,12 @@ import com.faforever.ice.gpgnet.GpgnetMessage.HostGame
 import com.faforever.ice.gpgnet.GpgnetMessage.JoinGame
 import com.faforever.ice.gpgnet.GpgnetProxy
 import com.faforever.ice.ice4j.CandidatesMessage
-import com.faforever.ice.peering.ConnectivityChecker
 import com.faforever.ice.peering.CoturnServer
 import com.faforever.ice.peering.RemotePeerOrchestrator
 import com.faforever.ice.util.ReusableComponent
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
-import com.fasterxml.jackson.module.kotlin.KotlinModule
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.net.InetAddress
+import java.time.Clock
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 
@@ -29,10 +27,6 @@ class IceAdapter(
     private val coturnServers: List<CoturnServer>,
     private val onIceCandidatesGathered: (CandidatesMessage) -> Unit,
 ) : ControlPlane, ReusableComponent {
-    private val objectMapper = ObjectMapper().apply {
-        registerModule(JavaTimeModule())
-        registerModule(KotlinModule.Builder().build())
-    }
 
     private val objectLock = Object()
     var gameState: GameState = GameState.NONE
@@ -99,12 +93,15 @@ class IceAdapter(
         val remotePeerOrchestrator = RemotePeerOrchestrator(
             localPlayerId = iceOptions.userId,
             remotePlayerId = remotePlayerId,
-            localOffer = false,
+            isOfferer = false,
             forceRelay = iceOptions.forceRelay,
             coturnServers = coturnServers,
             relayToLocalGame = lobbyConnectionProxy::sendData,
             publishLocalCandidates = onIceCandidatesGathered,
-        ).also { it.initialize() }
+        )
+
+        val connectivityCheckHandler = connectivityChecker.registerPlayer(remotePeerOrchestrator)
+        remotePeerOrchestrator.initialize(connectivityCheckHandler)
 
         players[remotePlayerId] = remotePeerOrchestrator
 
@@ -124,12 +121,15 @@ class IceAdapter(
         val remotePeerOrchestrator = RemotePeerOrchestrator(
             localPlayerId = iceOptions.userId,
             remotePlayerId = remotePlayerId,
-            localOffer = offer,
+            isOfferer = offer,
             forceRelay = iceOptions.forceRelay,
             coturnServers = coturnServers,
             relayToLocalGame = lobbyConnectionProxy::sendData,
             publishLocalCandidates = onIceCandidatesGathered,
-        ).also { it.initialize() }
+        )
+
+        val connectivityCheckHandler = connectivityChecker.registerPlayer(remotePeerOrchestrator)
+        remotePeerOrchestrator.initialize(connectivityCheckHandler)
 
         players[remotePlayerId] = remotePeerOrchestrator
 

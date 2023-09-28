@@ -1,10 +1,13 @@
 package com.faforever.ice.peering
 
+import com.faforever.ice.connectivitycheck.ConnectivityCheckHandler
+import com.faforever.ice.connectivitycheck.ConnectivityCheckable
 import com.faforever.ice.ice4j.AgentWrapper
 import com.faforever.ice.ice4j.CandidatesMessage
 import com.faforever.ice.ice4j.IceState
 import com.faforever.ice.util.ExecutorHolder
 import com.faforever.ice.util.isNotIn
+import com.google.common.primitives.Longs
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.oshai.kotlinlogging.withLoggingContext
 import java.io.Closeable
@@ -19,12 +22,12 @@ private val logger = KotlinLogging.logger {}
 class RemotePeerOrchestrator(
     private val localPlayerId: Int,
     private val remotePlayerId: Int,
-    private val localOffer: Boolean,
+    override val isOfferer: Boolean,
     private val forceRelay: Boolean,
     private val coturnServers: List<CoturnServer>,
     private val relayToLocalGame: (ByteArray) -> Unit,
     private val publishLocalCandidates: (CandidatesMessage) -> Unit,
-) : Closeable {
+) : Closeable, ConnectivityCheckable {
     companion object {
         private val executor: ScheduledExecutorService get() = ExecutorHolder.executor
     }
@@ -38,6 +41,7 @@ class RemotePeerOrchestrator(
     private var agent: AgentWrapper? = null
     private var remoteListenerThread: Thread? = null
     private var remoteSenderThread: Thread? = null
+    private var connectivityCheckHandler: ConnectivityCheckHandler? = null
 
     @Volatile
     private var connected = false
@@ -45,7 +49,7 @@ class RemotePeerOrchestrator(
     @Volatile
     private var closing = false
 
-    fun initialize() {
+    fun initialize(connectivityCheckHandler: ConnectivityCheckHandler) {
         withLoggingContext("remotePlayerId" to remotePlayerId.toString()) {
             synchronized(objectLock) {
                 if (this.iceState.isNotIn(IceState.NEW, IceState.DISCONNECTED)) {
@@ -56,10 +60,11 @@ class RemotePeerOrchestrator(
 
                 udpSocketBridge = UdpSocketBridge(toRemoteQueue::put, "player-$remotePlayerId")
                     .apply { start() }
+                this.connectivityCheckHandler = connectivityCheckHandler
                 agent = AgentWrapper(
                     localPlayerId = localPlayerId,
                     remotePlayerId = remotePlayerId,
-                    localOffer = localOffer,
+                    localOffer = isOfferer,
                     forceRelay = forceRelay,
                     coturnServers = coturnServers,
                     onStateChanged = ::onIceStateChange,
@@ -100,7 +105,17 @@ class RemotePeerOrchestrator(
         agent!!.onRemoteCandidatesReceived(candidatesMessage)
     }
 
-    private fun onConnectionLost() {
+    override fun sendEcho() {
+        val echoPackage = ByteArray(9)
+        echoPackage[0] = 'e'.code.toByte()
+
+        // Copy current time (long, 8 bytes) into array after leading prefix indicating echo
+        System.arraycopy(Longs.toByteArray(System.currentTimeMillis()), 0, echoPackage, 1, 8)
+
+        toRemoteQueue.put(echoPackage)
+    }
+
+    override fun onConnectionLost() {
         synchronized(objectLock) {
             logger.debug { "Shutting down listener thread" }
             logger.debug { "Shutting refresh module" }
@@ -120,7 +135,7 @@ class RemotePeerOrchestrator(
                 logger.debug { "Notify FAF client about connection lost + reconnecting" }
 
                 // We were connected before, retry immediately
-                if (localOffer) {
+                if (isOfferer) {
                     executor.submit { reinitIce() }
                 }
             } else {
@@ -222,6 +237,7 @@ class RemotePeerOrchestrator(
             if (!closing) return
 
             closing = true
+            connectivityCheckHandler?.disconnected()
             remoteListenerThread?.interrupt()
             remoteSenderThread?.interrupt()
             udpSocketBridge?.close()
