@@ -77,7 +77,7 @@ class RemotePeerOrchestrator(
 
     private fun onIceStateChange(oldState: IceState, newState: IceState) {
         if (closing) return
-        
+
         publishIceConnectionState(localPlayerId, remotePlayerId, newState.message)
 
         when {
