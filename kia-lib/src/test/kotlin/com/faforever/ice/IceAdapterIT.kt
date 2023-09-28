@@ -69,7 +69,7 @@ class IceAdapterIT {
 
         adapter2.joinGame("User 1", 1)
 
-        Thread.sleep(5000)
+        Thread.sleep(3000)
 
         client1.sendLobbyData(data)
         val result = client2.receiveLobbyData()
