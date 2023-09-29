@@ -6,6 +6,7 @@ data class IceOptions(
     val userName: String,
     val gameId: Int,
     val forceRelay: Boolean,
+    val rpcPort: Int,
     val lobbyPort: Int,
     val gpgnetPort: Int,
     val telemetryServer: String,

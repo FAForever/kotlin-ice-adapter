@@ -36,6 +36,7 @@ class GpgnetProxyTest {
     private val testTCPPort = 5000
     private val testMessage = GpgnetMessage.HostGame("myMap")
 
+    private var onGameConnectionStateChanged: (String) -> Unit = {}
     private var onMessage: (GpgnetMessage) -> Unit = {}
     private var onFailure: (Throwable) -> Unit = {}
 
@@ -46,6 +47,7 @@ class GpgnetProxyTest {
 
         sut = GpgnetProxy(
             iceOptions = iceOptions,
+            onGameConnectionStateChanged = { onGameConnectionStateChanged(it) },
             onMessage = { onMessage(it) },
             onFailure = { onFailure(it) },
         )

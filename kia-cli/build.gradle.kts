@@ -10,6 +10,10 @@ dependencies {
     val picocliVersion = "4.7.4"
     val logbackVersion = "1.4.11"
     kapt("info.picocli:picocli-codegen:$picocliVersion")
+    implementation("com.fasterxml.jackson.core:jackson-databind:2.15.2")
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.15.2")
+    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.15.2")
+    implementation("com.github.faforever:JJsonRpc:37669e0fed")
     implementation("info.picocli:picocli:$picocliVersion")
     implementation("io.github.oshai:kotlin-logging-jvm:5.1.0")
     implementation("org.slf4j:slf4j-api:2.0.7")

@@ -14,6 +14,7 @@ subprojects {
 
     repositories {
         mavenCentral()
+        maven { setUrl("https://jitpack.io") }
     }
 
     apply(plugin = "com.adarshr.test-logger")

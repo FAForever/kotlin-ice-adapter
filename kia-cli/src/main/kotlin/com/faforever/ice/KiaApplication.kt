@@ -1,5 +1,8 @@
 package com.faforever.ice
 
+import com.faforever.ice.gpgnet.GpgnetMessage
+import com.faforever.ice.ice4j.CandidatesMessage
+import com.faforever.ice.rpc.RpcService
 import io.github.oshai.kotlinlogging.KotlinLogging
 import picocli.CommandLine
 import picocli.CommandLine.Command
@@ -53,11 +56,44 @@ class KiaApplication : Callable<Int> {
     )
     private var telemetryServer: String = ""
 
+    private val iceOptions = IceOptions(
+        userId,
+        userName,
+        gameId,
+        forceRelay,
+        rpcPort,
+        lobbyPort,
+        gpgnetPort,
+        telemetryServer,
+    )
+    private val iceAdapter: IceAdapter = IceAdapter(
+        iceOptions,
+        emptyList(),
+        this::onConnectionStateChanged,
+        this::onGpgNetMessageReceived,
+        this::onIceMsg,
+        this::onIceConnectionStateChanged,
+        this::onConnected,
+        this::onIceAdapterStopped,
+    )
+    private val rpcService: RpcService = RpcService(rpcPort, iceAdapter)
+
+    private fun onConnectionStateChanged(newState: String) = rpcService.onConnectionStateChanged(newState)
+
+    private fun onGpgNetMessageReceived(message: GpgnetMessage) = rpcService.onGpgNetMessageReceived(message)
+
+    private fun onIceMsg(candidatesMessage: CandidatesMessage) = rpcService.onIceMsg(candidatesMessage)
+
+    private fun onIceConnectionStateChanged(localPlayerId: Int, remotePlayerId: Int, state: String) = rpcService.onIceConnectionStateChanged(localPlayerId, remotePlayerId, state)
+
+    private fun onConnected(localPlayerId: Int, remotePlayerId: Int, connected: Boolean) = rpcService.onConnected(localPlayerId, remotePlayerId, connected)
+
+    private fun onIceAdapterStopped() = rpcService.stop()
+
     override fun call(): Int {
-        val iceOptions = IceOptions(userId, userName, gameId, forceRelay, lobbyPort, gpgnetPort, telemetryServer)
         logger.info { "Starting ICE adapter with options: $iceOptions" }
-        val iceAdapter = IceAdapter(iceOptions, emptyList(), {})
         iceAdapter.start()
+        rpcService.start()
         return 0
     }
 
