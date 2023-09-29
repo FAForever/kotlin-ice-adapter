@@ -34,6 +34,8 @@ class IceAdapter(
 
     private val coturnServers: MutableList<CoturnServer> = ArrayList(initialCoturnServers)
     private val objectLock = Object()
+    var lobbyInitMode: LobbyInitMode = LobbyInitMode.NORMAL
+        private set
     var gameState: GameState = GameState.NONE
         private set
     private var lobbyStateFuture: CompletableFuture<Unit>? = null
@@ -65,7 +67,7 @@ class IceAdapter(
                 if (message.gameState == GameState.IDLE) {
                     gpgnetProxy.sendGpgnetMessage(
                         GpgnetMessage.CreateLobby(
-                            lobbyInitMode = LobbyInitMode.NORMAL, // TODO: Where does it come from?
+                            lobbyInitMode = lobbyInitMode,
                             lobbyPort = iceOptions.lobbyPort,
                             localPlayerName = iceOptions.userName,
                             localPlayerId = iceOptions.userId,
@@ -164,8 +166,8 @@ class IceAdapter(
         gpgnetProxy.sendGpgnetMessage(DisconnectFromPeer(remotePlayerId))
     }
 
-    fun setLobbyInitMode(lobbyInitMode: String) {
-        TODO("Not yet implemented")
+    fun setLobbyInitMode(lobbyInitMode: LobbyInitMode) {
+        this.lobbyInitMode = lobbyInitMode
     }
 
     override fun stop() {

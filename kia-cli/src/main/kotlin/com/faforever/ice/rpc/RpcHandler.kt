@@ -2,6 +2,7 @@ package com.faforever.ice.rpc
 
 import com.faforever.ice.ControlPlane
 import com.faforever.ice.IceAdapter
+import com.faforever.ice.game.LobbyInitMode
 import com.faforever.ice.gpgnet.GpgnetMessage
 import com.faforever.ice.ice4j.CandidatesMessage
 import com.faforever.ice.peering.CoturnServer
@@ -31,7 +32,7 @@ class RpcHandler(
     }
 
     override fun setLobbyInitMode(lobbyInitMode: String) {
-        iceAdapter.setLobbyInitMode(lobbyInitMode)
+        iceAdapter.setLobbyInitMode(LobbyInitMode.valueOf(lobbyInitMode))
     }
 
     override fun iceMsg(remotePlayerId: Int, candidatesMessage: CandidatesMessage) {
