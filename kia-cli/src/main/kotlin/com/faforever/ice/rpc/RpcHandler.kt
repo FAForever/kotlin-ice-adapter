@@ -4,7 +4,6 @@ import com.faforever.ice.ControlPlane
 import com.faforever.ice.IceAdapter
 import com.faforever.ice.gpgnet.GpgnetMessage
 import com.faforever.ice.ice4j.CandidatesMessage
-import com.fasterxml.jackson.databind.ObjectMapper
 
 /**
  * Handles calls from JsonRPC (the faf client)
