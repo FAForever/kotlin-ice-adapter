@@ -23,15 +23,16 @@ private val logger = KotlinLogging.logger {}
 
 class IceAdapter(
     private val iceOptions: IceOptions,
-    private val coturnServers: List<CoturnServer>,
     onGameConnectionStateChanged: (String) -> Unit,
     private val onGpgNetMessageReceived: (GpgnetMessage) -> Unit,
     private val onIceCandidatesGathered: (CandidatesMessage) -> Unit,
     private val onIceConnectionStateChanged: (Int, Int, String) -> Unit,
     private val onConnected: (Int, Int, Boolean) -> Unit,
     private val onIceAdapterStopped: () -> Unit,
+    initialCoturnServers: List<CoturnServer>,
 ) : ReusableComponent {
 
+    private val coturnServers: MutableList<CoturnServer> = ArrayList(initialCoturnServers)
     private val objectLock = Object()
     var gameState: GameState = GameState.NONE
         private set
@@ -76,6 +77,7 @@ class IceAdapter(
 
                 gameState = message.gameState
             }
+
             is GpgnetMessage.GameEnded -> {
                 gameState = GameState.ENDED
             }
@@ -84,7 +86,8 @@ class IceAdapter(
     }
 
     fun receiveIceCandidates(remotePlayerId: Int, candidatesMessage: CandidatesMessage) {
-        val orchestrator = players[remotePlayerId] ?: throw IllegalStateException("Unknown remotePlayerId: $remotePlayerId")
+        val orchestrator =
+            players[remotePlayerId] ?: throw IllegalStateException("Unknown remotePlayerId: $remotePlayerId")
         orchestrator.onRemoteCandidatesReceived(candidatesMessage)
     }
 
@@ -183,7 +186,10 @@ class IceAdapter(
         gpgnetProxy.sendGpgnetMessage(message)
     }
 
-    fun setIceServers(iceServers: List<Map<String, Any>>) {
-        TODO("Not yet implemented")
+    fun setIceServers(iceServers: List<CoturnServer>) {
+        synchronized(coturnServers) {
+            coturnServers.clear()
+            coturnServers.addAll(iceServers)
+        }
     }
 }

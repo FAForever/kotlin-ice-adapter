@@ -38,13 +38,13 @@ class IceAdapterIT {
                 5002,
                 "telemetryServer",
             ),
-            coturnServers = coturnServers,
             {},
             {},
             candidatesTestForwarder::onCandidatesFromA1,
             { _, _, _ -> },
             { _, _, _ -> },
             {},
+            coturnServers,
         ).apply { start() }
 
         val client1 = FakeGameClient(5002, 5001, 1)
@@ -64,13 +64,13 @@ class IceAdapterIT {
                 6002,
                 "telemetryServer",
             ),
-            coturnServers = coturnServers,
             {},
             {},
             candidatesTestForwarder::onCandidatesFromA2,
             { _, _, _ -> },
             { _, _, _ -> },
             {},
+            coturnServers,
         ).apply { start() }
         val client2 = FakeGameClient(6002, 6001, 2)
         client2.sendGpgnetMessage(GpgnetMessage.GameState(GameState.IDLE))

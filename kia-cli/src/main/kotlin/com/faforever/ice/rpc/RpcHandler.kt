@@ -4,6 +4,8 @@ import com.faforever.ice.ControlPlane
 import com.faforever.ice.IceAdapter
 import com.faforever.ice.gpgnet.GpgnetMessage
 import com.faforever.ice.ice4j.CandidatesMessage
+import com.faforever.ice.peering.CoturnServer
+import java.net.URI
 
 /**
  * Handles calls from JsonRPC (the faf client)
@@ -41,7 +43,30 @@ class RpcHandler(
     }
 
     override fun setIceServers(iceServers: List<Map<String, Any>>) {
-        iceAdapter.setIceServers(iceServers)
+        val coturnServers = iceServers.flatMap { iceServerData ->
+            val urlsData = iceServerData["urls"] ?: emptyList<String>()
+            val username = iceServerData["username"] as? String
+            val credential = iceServerData["credential"] as? String
+
+            if (urlsData is List<*>) {
+                urlsData as List<String>
+            } else {
+                listOf(iceServerData["url"] as String)
+            }
+                .map { URI(it) }
+                .map {
+                    // for now, we intentionally ignore the transport parameter for UDP/TCP
+                    // and the uri scheme (STUN/TURN)
+                    CoturnServer(
+                        hostname = it.host,
+                        port = it.port,
+                        username = username,
+                        credential = credential,
+                    )
+                }
+        }
+
+        iceAdapter.setIceServers(coturnServers)
     }
 
     override fun quit() {

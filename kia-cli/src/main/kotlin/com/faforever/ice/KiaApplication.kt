@@ -68,13 +68,13 @@ class KiaApplication : Callable<Int> {
     )
     private val iceAdapter: IceAdapter = IceAdapter(
         iceOptions,
-        emptyList(),
         this::onConnectionStateChanged,
         this::onGpgNetMessageReceived,
         this::onIceMsg,
         this::onIceConnectionStateChanged,
         this::onConnected,
         this::onIceAdapterStopped,
+        emptyList(),
     )
     private val rpcService: RpcService = RpcService(rpcPort, iceAdapter)
 
