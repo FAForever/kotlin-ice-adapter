@@ -11,7 +11,6 @@ import com.fasterxml.jackson.databind.ObjectMapper
  */
 class RpcHandler(
     private val iceAdapter: IceAdapter,
-    private val objectMapper: ObjectMapper,
 ) : ControlPlane {
 
     override fun hostGame(mapName: String) {

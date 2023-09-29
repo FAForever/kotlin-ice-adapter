@@ -6,6 +6,7 @@ import com.faforever.ice.ice4j.CandidatesMessage
 import com.faforever.ice.util.ReusableComponent
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
+import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.nbarraille.jjsonrpc.JJsonPeer
 import com.nbarraille.jjsonrpc.TcpServer
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -21,9 +22,10 @@ class RpcService(
     private val iceAdapter: IceAdapter,
 ) : ReusableComponent {
     private val objectMapper: ObjectMapper = ObjectMapper().apply {
+        registerModule(KotlinModule.Builder().build())
         registerModule(JavaTimeModule())
     }
-    private val rpcHandler: RpcHandler = RpcHandler(iceAdapter, objectMapper)
+    private val rpcHandler: RpcHandler = RpcHandler(iceAdapter)
     private val tcpServer: TcpServer = TcpServer(rpcPort, rpcHandler)
 
     @Volatile
