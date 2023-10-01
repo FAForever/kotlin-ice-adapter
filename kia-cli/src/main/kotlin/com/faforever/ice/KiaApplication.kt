@@ -79,9 +79,11 @@ class KiaApplication : Callable<Int> {
     }
 
     override fun call(): Int {
-        val realLobbyPort = if(lobbyPort == 0) {
+        val realLobbyPort = if (lobbyPort == 0) {
             SocketFactory.createLocalUDPSocket().use { it.localPort }
-        } else lobbyPort
+        } else {
+            lobbyPort
+        }
 
         iceOptions = IceOptions(
             userId,

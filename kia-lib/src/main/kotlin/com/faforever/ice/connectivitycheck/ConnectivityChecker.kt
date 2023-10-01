@@ -124,7 +124,7 @@ class ConnectivityChecker(
             }
         }
 
-        if(!connectivityCheckable.isOfferer) {
+        if (!connectivityCheckable.isOfferer) {
             // respond to echo
             connectivityCheckable.sendEcho()
         }

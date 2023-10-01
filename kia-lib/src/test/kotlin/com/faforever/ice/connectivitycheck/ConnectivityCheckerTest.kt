@@ -135,7 +135,7 @@ class ConnectivityCheckerTest {
         handler.echoReceived()
         assertEquals(ConnectivityCheckHandler.Status.ALIVE, handler.status)
 
-        verify{ connectivityCheckable.sendEcho() }
+        verify { connectivityCheckable.sendEcho() }
     }
 
     @ParameterizedTest

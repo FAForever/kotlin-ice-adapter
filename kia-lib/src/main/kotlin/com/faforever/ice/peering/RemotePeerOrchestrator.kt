@@ -7,7 +7,6 @@ import com.faforever.ice.ice4j.CandidatesMessage
 import com.faforever.ice.ice4j.IceState
 import com.faforever.ice.util.ExecutorHolder
 import com.faforever.ice.util.isNotIn
-import com.google.common.primitives.Longs
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.oshai.kotlinlogging.withLoggingContext
 import java.io.Closeable
@@ -37,7 +36,7 @@ class RemotePeerOrchestrator(
         "RemotePeerOrchestrator(localPlayerId=$localPlayerId,remotePlayerId=$remotePlayerId,isOfferer=$isOfferer,forceRelay=$forceRelay,...)"
 
     val udpBridgePort: Int? get() = udpSocketBridge?.port
-    private val toRemoteQueue: BlockingQueue<ByteArray> = ArrayBlockingQueue(32, true)
+    private val toRemoteQueue: BlockingQueue<ProtocolPacket> = ArrayBlockingQueue(32, true)
 
     private val objectLock = Object()
     private var iceState: IceState = IceState.NEW
@@ -62,8 +61,11 @@ class RemotePeerOrchestrator(
                 }
                 this.iceState = IceState.GATHERING
 
-                udpSocketBridge = UdpSocketBridge(toRemoteQueue::put, "player-$remotePlayerId")
-                    .apply { start() }
+                udpSocketBridge = UdpSocketBridge(
+                    forwardTo = { toRemoteQueue.put(GameDataPacket(it)) },
+                    name = "player-$remotePlayerId",
+                ).apply { start() }
+
                 this.connectivityCheckHandler = connectivityCheckHandler
                 agent = AgentWrapper(
                     localPlayerId = localPlayerId,
@@ -112,13 +114,7 @@ class RemotePeerOrchestrator(
     }
 
     override fun sendEcho() {
-        val echoPackage = ByteArray(9)
-        echoPackage[0] = 'e'.code.toByte()
-
-        // Copy current time (long, 8 bytes) into array after leading prefix indicating echo
-        System.arraycopy(Longs.toByteArray(System.currentTimeMillis()), 0, echoPackage, 1, 8)
-
-        toRemoteQueue.put(echoPackage)
+        toRemoteQueue.put(EchoPacket())
     }
 
     override fun onConnectionLost() {
@@ -172,9 +168,9 @@ class RemotePeerOrchestrator(
                 when {
                     data.isEmpty() -> continue
                     // Received data
-                    data[0] == 'd'.code.toByte() -> relayToLocalGame(data)
+                    data[0] == GameDataPacket.PREFIX -> relayToLocalGame(data)
                     // Received echo req/res
-                    data[0] == 'e'.code.toByte() -> connectivityCheckHandler!!.echoReceived()
+                    data[0] == EchoPacket.PREFIX -> connectivityCheckHandler!!.echoReceived()
                     else -> logger.warn {
                         "Received invalid packet, first byte: 0x${data[0]}, length: ${data.size}, as String: ${
                             String(data)
@@ -212,7 +208,7 @@ class RemotePeerOrchestrator(
                 }
 
                 else -> {
-                    val message: ByteArray? = toRemoteQueue.peek()
+                    val message: ProtocolPacket? = toRemoteQueue.peek()
                     val success = if (message == null) false else sendToRemotePlayer(message)
                     if (success) {
                         // in case we could send successfully, discard it
@@ -228,9 +224,9 @@ class RemotePeerOrchestrator(
         logger.info { "sendToRemotePlayerLoop shutdown due to closing" }
     }
 
-    private fun sendToRemotePlayer(data: ByteArray): Boolean =
+    private fun sendToRemotePlayer(data: ProtocolPacket): Boolean =
         try {
-            checkNotNull(agent).send(data)
+            checkNotNull(agent).send(data.buildWireData())
             true
         } catch (e: IOException) {
             false

@@ -22,7 +22,7 @@ class IceAdapterIT {
 
     @Test
     fun `2 ice adapters should exchange a message`() {
-        val data = "dhello world".encodeToByteArray()
+        val data = "hello world".encodeToByteArray()
 
         val candidatesTestForwarder = CandidatesTestForwarder()
         val coturnServers: List<CoturnServer> = listOf(CoturnServer("stun.l.google.com", 19302))
@@ -86,6 +86,6 @@ class IceAdapterIT {
         client1.sendLobbyData(data)
         val result = client2.receiveLobbyData()
 
-        assertArrayEquals(data, result)
+        assertArrayEquals(byteArrayOf('d'.code.toByte()) + data, result)
     }
 }
