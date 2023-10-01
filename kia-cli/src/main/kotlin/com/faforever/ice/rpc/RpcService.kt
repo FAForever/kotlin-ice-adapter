@@ -44,49 +44,39 @@ class RpcService(
     }
 
     fun onConnectionStateChanged(newState: String) {
-        if (!skipRPCMessages) {
-            peerOrWait?.sendNotification("onConnectionStateChanged", listOf(newState))
-        }
+        sendNotification("onConnectionStateChanged", listOf(newState))
     }
 
     fun onGpgNetMessageReceived(message: GpgnetMessage) {
-        if (!skipRPCMessages) {
-            peerOrWait?.sendNotification(
-                "onGpgNetMessageReceived",
-                listOf(message.command, message.args),
-            )
-        }
+        sendNotification(
+            "onGpgNetMessageReceived",
+            listOf(message.command, message.args),
+        )
     }
 
     fun onIceMsg(candidatesMessage: CandidatesMessage) {
-        if (!skipRPCMessages) {
-            peerOrWait?.sendNotification(
-                "onIceMsg",
-                listOf(
-                    candidatesMessage.sourceId,
-                    candidatesMessage.destinationId,
-                    objectMapper.writeValueAsString(candidatesMessage),
-                ),
-            )
-        }
+        sendNotification(
+            "onIceMsg",
+            listOf(
+                candidatesMessage.sourceId,
+                candidatesMessage.destinationId,
+                objectMapper.writeValueAsString(candidatesMessage),
+            ),
+        )
     }
 
     fun onIceConnectionStateChanged(localPlayerId: Int, remotePlayerId: Int, state: String) {
-        if (!skipRPCMessages) {
-            peerOrWait?.sendNotification(
-                "onIceConnectionStateChanged",
-                listOf(localPlayerId, remotePlayerId, state),
-            )
-        }
+        sendNotification(
+            "onIceConnectionStateChanged",
+            listOf(localPlayerId, remotePlayerId, state),
+        )
     }
 
     fun onConnected(localPlayerId: Int, remotePlayerId: Int, connected: Boolean) {
-        if (!skipRPCMessages) {
-            peerOrWait?.sendNotification(
-                "onConnected",
-                listOf(localPlayerId, remotePlayerId, connected),
-            )
-        }
+        sendNotification(
+            "onConnected",
+            listOf(localPlayerId, remotePlayerId, connected),
+        )
     }
 
     private val peerOrWait: JJsonPeer?
@@ -101,6 +91,15 @@ class RpcService(
             logger.error(e) { "Error on fetching first peer" }
             null
         }
+
+    private fun sendNotification(methodName: String, args: List<Any>) {
+        if (!skipRPCMessages) {
+            logger.debug { "Send notification $methodName ($args)" }
+            peerOrWait?.sendNotification(methodName, args)
+        } else {
+            logger.debug { "Skipping notification send $methodName ($args)" }
+        }
+    }
 
     override fun stop() {
         tcpServer.stop()
