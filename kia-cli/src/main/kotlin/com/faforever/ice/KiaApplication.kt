@@ -3,6 +3,7 @@ package com.faforever.ice
 import com.faforever.ice.gpgnet.GpgnetMessage
 import com.faforever.ice.ice4j.CandidatesMessage
 import com.faforever.ice.rpc.RpcService
+import com.faforever.ice.util.SocketFactory
 import io.github.oshai.kotlinlogging.KotlinLogging
 import picocli.CommandLine
 import picocli.CommandLine.Command
@@ -78,13 +79,17 @@ class KiaApplication : Callable<Int> {
     }
 
     override fun call(): Int {
+        val realLobbyPort = if(lobbyPort == 0) {
+            SocketFactory.createLocalUDPSocket().use { it.localPort }
+        } else lobbyPort
+
         iceOptions = IceOptions(
             userId,
             userName,
             gameId,
             forceRelay,
             rpcPort,
-            lobbyPort,
+            realLobbyPort,
             gpgnetPort,
             telemetryServer,
         )
