@@ -20,14 +20,14 @@ private val logger = KotlinLogging.logger {}
 )
 class KiaApplication : Callable<Int> {
 
-    @Option(names = ["--user-id"], required = true, description = ["set the ID of the local player"])
+    @Option(names = ["--user-id", "--id"], required = true, description = ["set the ID of the local player"])
     private var userId: Int = 0
 
     @Option(names = ["--game-id"], required = true, description = ["set the ID of the game"])
     private var gameId: Int = 0
 
     @Option(
-        names = ["--user-name"],
+        names = ["--user-name", "--login"],
         required = true,
         description = ["set the login of the local player e.g. \"Rhiza\""],
     )
@@ -56,27 +56,11 @@ class KiaApplication : Callable<Int> {
     )
     private var telemetryServer: String = ""
 
-    private val iceOptions = IceOptions(
-        userId,
-        userName,
-        gameId,
-        forceRelay,
-        rpcPort,
-        lobbyPort,
-        gpgnetPort,
-        telemetryServer,
-    )
-    private val iceAdapter: IceAdapter = IceAdapter(
-        iceOptions,
-        this::onConnectionStateChanged,
-        this::onGpgNetMessageReceived,
-        this::onIceMsg,
-        this::onIceConnectionStateChanged,
-        this::onConnected,
-        this::onIceAdapterStopped,
-        emptyList(),
-    )
-    private val rpcService: RpcService = RpcService(rpcPort, iceAdapter)
+    private var closing: Boolean = false
+
+    private lateinit var iceOptions: IceOptions
+    private lateinit var iceAdapter: IceAdapter
+    private lateinit var rpcService: RpcService
 
     private fun onConnectionStateChanged(newState: String) = rpcService.onConnectionStateChanged(newState)
 
@@ -88,12 +72,44 @@ class KiaApplication : Callable<Int> {
 
     private fun onConnected(localPlayerId: Int, remotePlayerId: Int, connected: Boolean) = rpcService.onConnected(localPlayerId, remotePlayerId, connected)
 
-    private fun onIceAdapterStopped() = rpcService.stop()
+    private fun onIceAdapterStopped() {
+        rpcService.stop()
+        closing = true
+    }
 
     override fun call(): Int {
+        iceOptions = IceOptions(
+            userId,
+            userName,
+            gameId,
+            forceRelay,
+            rpcPort,
+            lobbyPort,
+            gpgnetPort,
+            telemetryServer,
+        )
+
+        iceAdapter = IceAdapter(
+            iceOptions,
+            this::onConnectionStateChanged,
+            this::onGpgNetMessageReceived,
+            this::onIceMsg,
+            this::onIceConnectionStateChanged,
+            this::onConnected,
+            this::onIceAdapterStopped,
+            emptyList(),
+        )
+
+        rpcService = RpcService(rpcPort, iceAdapter)
+
         logger.info { "Starting ICE adapter with options: $iceOptions" }
         iceAdapter.start()
         rpcService.start()
+
+        while (!closing) {
+            Thread.sleep(5000)
+        }
+
         return 0
     }
 
