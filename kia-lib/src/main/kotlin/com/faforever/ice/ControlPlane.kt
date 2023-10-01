@@ -1,19 +1,17 @@
 package com.faforever.ice
 
-import com.faforever.ice.gpgnet.GpgnetMessage
-import com.faforever.ice.ice4j.CandidatesMessage
-
 /**
- * External actions to be performed on the ICE Adapter
+ * External actions to be performed on the ICE Adapter.
+ * Attention: The jjsonrpc library demands all numbers to be long over int
  */
 interface ControlPlane {
     fun hostGame(mapName: String)
-    fun joinGame(remotePlayerLogin: String, remotePlayerId: Int)
-    fun connectToPeer(remotePlayerLogin: String, remotePlayerId: Int, offer: Boolean)
-    fun disconnectFromPeer(remotePlayerId: Int)
+    fun joinGame(remotePlayerLogin: String, remotePlayerId: Long)
+    fun connectToPeer(remotePlayerLogin: String, remotePlayerId: Long, offer: Boolean)
+    fun disconnectFromPeer(remotePlayerId: Long)
     fun setLobbyInitMode(lobbyInitMode: String)
-    fun iceMsg(remotePlayerId: Int, candidatesMessage: CandidatesMessage)
-    fun sendToGpgNet(message: GpgnetMessage)
+    fun iceMsg(remotePlayerId: Long, message: String)
+    fun sendToGpgNet(command: String, args: List<String>)
     fun setIceServers(iceServers: List<Map<String, Any>>)
     fun quit()
 }

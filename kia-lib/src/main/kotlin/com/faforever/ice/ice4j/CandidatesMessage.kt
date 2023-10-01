@@ -1,10 +1,13 @@
 package com.faforever.ice.ice4j
 
+import com.fasterxml.jackson.annotation.JsonProperty
 import org.ice4j.ice.CandidateType
 
 @JvmRecord
 data class CandidatesMessage(
+    @field:JsonProperty("srcId")
     val sourceId: Int,
+    @field:JsonProperty("destId")
     val destinationId: Int,
     val password: String,
     val ufrag: String,

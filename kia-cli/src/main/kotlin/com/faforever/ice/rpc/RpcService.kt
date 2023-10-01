@@ -25,7 +25,7 @@ class RpcService(
         registerModule(KotlinModule.Builder().build())
         registerModule(JavaTimeModule())
     }
-    private val rpcHandler: RpcHandler = RpcHandler(iceAdapter)
+    private val rpcHandler: RpcHandler = RpcHandler(iceAdapter, objectMapper)
     private val tcpServer: TcpServer = TcpServer(rpcPort, rpcHandler)
 
     @Volatile
