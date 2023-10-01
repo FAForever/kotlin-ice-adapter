@@ -33,6 +33,8 @@ class RemotePeerOrchestrator(
         private val executor: ScheduledExecutorService get() = ExecutorHolder.executor
     }
 
+    override fun toString() = "RemotePeerOrchestrator(localPlayerId=$localPlayerId,remotePlayerId=$remotePlayerId,isOfferer=$isOfferer,forceRelay=$forceRelay,...)"
+
     val udpBridgePort: Int? get() = udpSocketBridge?.port
     private val toRemoteQueue: BlockingQueue<ByteArray> = ArrayBlockingQueue(32, true)
 

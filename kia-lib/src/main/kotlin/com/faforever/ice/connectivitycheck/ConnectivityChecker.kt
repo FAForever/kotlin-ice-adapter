@@ -25,7 +25,7 @@ class ConnectivityChecker(
     private val clock: Clock = Clock.systemUTC(),
     private val connectionAliveSeconds: Int = 5,
     private val connectionEchoPendingSeconds: Int = 5,
-    private val connectionDeadThresholdSeconds: Int = 5,
+    private val connectionDeadThresholdSeconds: Int = 60,
 ) : ReusableComponent {
     companion object {
         private val sharedExecutor: ScheduledExecutorService get() = ExecutorHolder.executor
@@ -153,10 +153,12 @@ class ConnectivityChecker(
                     }
                 }
                 DEAD -> {
-                    handler.connectionState = handler.connectionState.copy(
-                        iceState = IceState.DISCONNECTED,
-                    )
-                    sharedExecutor.submit(connectivityCheckable::onConnectionLost)
+                    if (handler.connectionState.iceState != IceState.DISCONNECTED) {
+                        handler.connectionState = handler.connectionState.copy(
+                            iceState = IceState.DISCONNECTED,
+                        )
+                        sharedExecutor.submit(connectivityCheckable::onConnectionLost)
+                    }
                 }
             }
         }
