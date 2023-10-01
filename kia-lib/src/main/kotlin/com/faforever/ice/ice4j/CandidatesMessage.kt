@@ -5,9 +5,9 @@ import org.ice4j.ice.CandidateType
 
 @JvmRecord
 data class CandidatesMessage(
-    @field:JsonProperty("srcId")
+    @get:JsonProperty("srcId")
     val sourceId: Int,
-    @field:JsonProperty("destId")
+    @get:JsonProperty("destId")
     val destinationId: Int,
     val password: String,
     val ufrag: String,
