@@ -33,7 +33,8 @@ class RemotePeerOrchestrator(
         private val executor: ScheduledExecutorService get() = ExecutorHolder.executor
     }
 
-    override fun toString() = "RemotePeerOrchestrator(localPlayerId=$localPlayerId,remotePlayerId=$remotePlayerId,isOfferer=$isOfferer,forceRelay=$forceRelay,...)"
+    override fun toString() =
+        "RemotePeerOrchestrator(localPlayerId=$localPlayerId,remotePlayerId=$remotePlayerId,isOfferer=$isOfferer,forceRelay=$forceRelay,...)"
 
     val udpBridgePort: Int? get() = udpSocketBridge?.port
     private val toRemoteQueue: BlockingQueue<ByteArray> = ArrayBlockingQueue(32, true)
@@ -173,12 +174,10 @@ class RemotePeerOrchestrator(
                     // Received data
                     data[0] == 'd'.code.toByte() -> relayToLocalGame(data)
                     // Received echo req/res
-                    data[0] == 'e'.code.toByte() -> TODO()
+                    data[0] == 'e'.code.toByte() -> connectivityCheckHandler!!.echoReceived()
                     else -> logger.warn {
                         "Received invalid packet, first byte: 0x${data[0]}, length: ${data.size}, as String: ${
-                            String(
-                                data,
-                            )
+                            String(data)
                         }"
                     }
                 }

@@ -124,6 +124,10 @@ class ConnectivityChecker(
             }
         }
 
+        if(!connectivityCheckable.isOfferer) {
+            // respond to echo
+            connectivityCheckable.sendEcho()
+        }
         // TODO: Calculate RTT
     }
 
