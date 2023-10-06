@@ -69,7 +69,7 @@ class UdpSocketBridge(
             try {
                 socket!!.receive(packet)
                 logger.trace { "$name: Forwarding ${packet.length} bytes" }
-                forwardTo(buffer.copyOfRange(0, packet.length))
+                forwardTo(buffer.copyOfRange(0, packet.length - 1))
             } catch (e: Exception) {
                 if (closing) {
                     return
