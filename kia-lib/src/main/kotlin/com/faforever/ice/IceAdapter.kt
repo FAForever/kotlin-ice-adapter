@@ -118,6 +118,9 @@ class IceAdapter(
         players[remotePlayerId] = remotePeerOrchestrator
 
         lobbyStateFuture!!.join()
+
+        logger.info { "joinGame: $remotePeerOrchestrator initialized, lobbyConnection on port ${lobbyConnectionProxy.lobbyPort}" }
+
         gpgnetProxy.sendGpgnetMessage(
             JoinGame(
                 remotePlayerLogin = remotePlayerLogin,
@@ -145,6 +148,8 @@ class IceAdapter(
         remotePeerOrchestrator.initialize(connectivityCheckHandler)
 
         players[remotePlayerId] = remotePeerOrchestrator
+
+        logger.info { "connectToPeer: $remotePeerOrchestrator initialized, lobbyConnection on port ${lobbyConnectionProxy.lobbyPort}" }
 
         lobbyStateFuture!!.join()
         gpgnetProxy.sendGpgnetMessage(

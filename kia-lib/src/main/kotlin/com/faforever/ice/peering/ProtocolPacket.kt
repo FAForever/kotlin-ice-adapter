@@ -12,6 +12,8 @@ sealed interface ProtocolPacket {
 data class GameDataPacket(private val gameData: ByteArray) : ProtocolPacket {
     companion object {
         const val PREFIX = 'd'.code.toByte()
+
+        fun fromWire(wireData: ByteArray) = GameDataPacket(wireData.copyOfRange(1, wireData.lastIndex))
     }
 
     override val prefix = PREFIX

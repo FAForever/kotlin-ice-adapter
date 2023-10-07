@@ -33,6 +33,9 @@ class AgentWrapper(
 
     private val objectLock = Object()
 
+    val port: Int? get() = component?.selectedPair?.iceSocketWrapper?.localPort
+
+
     // 64KiB = UDP MTU, in practice due to ethernet frames being <= 1500 B, this is often not used
     private val readBuffer = ByteArray(65536)
 

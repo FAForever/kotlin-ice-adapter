@@ -62,7 +62,7 @@ class RemotePeerOrchestrator(
                 this.iceState = IceState.GATHERING
 
                 udpSocketBridge = UdpSocketBridge(
-                    forwardTo = { toRemoteQueue.put(GameDataPacket(it)) },
+                    forwardTo = { toRemoteQueue.put(GameDataPacket.fromWire(it)) },
                     name = "player-$remotePlayerId",
                 ).apply { start() }
 
@@ -94,6 +94,8 @@ class RemotePeerOrchestrator(
                         .apply { start() }
                     remoteSenderThread = Thread { sendToRemotePlayerLoop() }
                         .apply { start() }
+
+                    logger.info { "$this connected: ice port ${this.agent?.port} <-> udp bridge port ${this.udpBridgePort}" }
                 }
             }
         }

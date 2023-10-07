@@ -21,7 +21,7 @@ private val logger = KotlinLogging.logger {}
 class LobbyConnectionProxy(
     iceOptions: IceOptions,
 ) : ReusableComponent, Closeable {
-    private val lobbyPort = iceOptions.lobbyPort
+    val lobbyPort = iceOptions.lobbyPort
 
     private val inQueue: BlockingQueue<ByteArray> = ArrayBlockingQueue(32, true)
 

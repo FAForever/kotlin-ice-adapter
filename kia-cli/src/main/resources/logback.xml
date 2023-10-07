@@ -23,6 +23,9 @@
         </encoder>
     </appender>
 
+    <logger name="com.faforever" level="trace" />
+    <logger name="com.nbarraille.jjsonrpc" level="warn" />
+
     <root level="DEBUG">
         <appender-ref ref="STDOUT"/>
         <appender-ref ref="FILE"/>
