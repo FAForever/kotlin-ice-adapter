@@ -24,7 +24,7 @@ class RemotePeerOrchestrator(
     override val isOfferer: Boolean,
     private val forceRelay: Boolean,
     private val coturnServers: List<CoturnServer>,
-    private val relayToLocalGame: (ByteArray) -> Unit,
+    private val relayToLocalGame: (GameDataPacket) -> Unit,
     private val publishLocalCandidates: (CandidatesMessage) -> Unit,
     private val publishIceConnectionState: (Int, Int, String) -> Unit,
 ) : Closeable, ConnectivityCheckable {
@@ -62,7 +62,7 @@ class RemotePeerOrchestrator(
                 this.iceState = IceState.GATHERING
 
                 udpSocketBridge = UdpSocketBridge(
-                    forwardTo = { toRemoteQueue.put(GameDataPacket.fromWire(it)) },
+                    forwardTo = { toRemoteQueue.put(GameDataPacket(it)) },
                     name = "player-$remotePlayerId",
                 ).apply { start() }
 
@@ -170,7 +170,7 @@ class RemotePeerOrchestrator(
                 when {
                     data.isEmpty() -> continue
                     // Received data
-                    data[0] == GameDataPacket.PREFIX -> relayToLocalGame(data)
+                    data[0] == GameDataPacket.PREFIX -> relayToLocalGame(GameDataPacket.fromWire(data))
                     // Received echo req/res
                     data[0] == EchoPacket.PREFIX -> connectivityCheckHandler!!.echoReceived()
                     else -> logger.warn {

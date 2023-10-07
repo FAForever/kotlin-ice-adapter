@@ -9,7 +9,7 @@ sealed interface ProtocolPacket {
     fun buildWireData() = byteArrayOf(prefix) + toByteArray()
 }
 
-data class GameDataPacket(private val gameData: ByteArray) : ProtocolPacket {
+data class GameDataPacket(val data: ByteArray) : ProtocolPacket {
     companion object {
         const val PREFIX = 'd'.code.toByte()
 
@@ -17,7 +17,7 @@ data class GameDataPacket(private val gameData: ByteArray) : ProtocolPacket {
     }
 
     override val prefix = PREFIX
-    override fun toByteArray() = gameData
+    override fun toByteArray() = data
 }
 
 data class EchoPacket(private val timestamp: Long = System.currentTimeMillis()) : ProtocolPacket {

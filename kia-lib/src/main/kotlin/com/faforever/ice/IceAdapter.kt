@@ -107,7 +107,7 @@ class IceAdapter(
             isOfferer = false,
             forceRelay = iceOptions.forceRelay,
             coturnServers = coturnServers,
-            relayToLocalGame = lobbyConnectionProxy::sendData,
+            relayToLocalGame = { lobbyConnectionProxy.sendData(it.data) },
             publishLocalCandidates = onIceCandidatesGathered,
             publishIceConnectionState = onIceConnectionStateChanged,
         )
@@ -139,7 +139,7 @@ class IceAdapter(
             isOfferer = offer,
             forceRelay = iceOptions.forceRelay,
             coturnServers = coturnServers,
-            relayToLocalGame = lobbyConnectionProxy::sendData,
+            relayToLocalGame = { lobbyConnectionProxy.sendData(it.data) },
             publishLocalCandidates = onIceCandidatesGathered,
             publishIceConnectionState = onIceConnectionStateChanged,
         )
