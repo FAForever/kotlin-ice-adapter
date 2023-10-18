@@ -7,8 +7,23 @@ import com.faforever.ice.ice4j.CandidatesMessage
 import com.faforever.ice.peering.CoturnServer
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Test
+import org.testcontainers.containers.GenericContainer
+import org.testcontainers.junit.jupiter.Container
+import org.testcontainers.junit.jupiter.Testcontainers
+import org.testcontainers.utility.DockerImageName
 
+@Testcontainers
 class IceAdapterIT {
+
+    companion object {
+        @Container
+        val coturnServerContainer: GenericContainer<Nothing> =
+            GenericContainer<Nothing>(DockerImageName.parse("coturn/coturn")).apply {
+                withCreateContainerCmdModifier { it.withHostName("test") }
+                withAccessToHost(true)
+            }
+    }
+
     class CandidatesTestForwarder {
         lateinit var adapter1: IceAdapter
         lateinit var adapter2: IceAdapter
@@ -18,6 +33,12 @@ class IceAdapterIT {
 
         fun onCandidatesFromA2(candidatesMessage: CandidatesMessage) =
             adapter1.receiveIceCandidates(2, candidatesMessage)
+    }
+
+    @Test
+    fun `huh`() {
+        println(coturnServerContainer.isRunning)
+//        val container = Container
     }
 
     @Test
