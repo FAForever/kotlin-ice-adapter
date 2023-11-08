@@ -9,5 +9,5 @@ data class CoturnServer(
     val username: String? = null,
     val credential: String? = null,
 ) {
-    fun toTCPTransport() = TransportAddress(hostname, port, Transport.TCP)
+    fun toUDPTransport() = TransportAddress(hostname, port, Transport.UDP)
 }

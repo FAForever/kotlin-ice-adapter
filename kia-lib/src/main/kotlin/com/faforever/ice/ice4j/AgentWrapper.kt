@@ -61,6 +61,8 @@ class AgentWrapper(
     private fun setState(newState: IceState) {
         if (state == newState) return
 
+        logger.debug { "ICE state changed from $state -> $newState" }
+
         val oldState = this.state
         state = newState
 
@@ -80,7 +82,7 @@ class AgentWrapper(
                     }
                 }
                 coturnServers.forEach {
-                    addCandidateHarvester(StunCandidateHarvester(it.toTCPTransport()))
+                    addCandidateHarvester(StunCandidateHarvester(it.toUDPTransport()))
 //                    addCandidateHarvester(
 //                        TurnCandidateHarvester(
 //                            it.toTCPTransport(),

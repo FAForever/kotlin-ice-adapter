@@ -6,7 +6,7 @@ plugins {
 dependencies {
     implementation("io.github.oshai:kotlin-logging-jvm:5.1.0")
     implementation("org.slf4j:slf4j-api:2.0.7")
-    implementation("org.jitsi:ice4j:3.0-62-ga947919")
+    implementation("org.jitsi:ice4j:3.0-66-g1c60acc")
     implementation("org.java-websocket:Java-WebSocket:1.5.3")
     implementation("com.fasterxml.jackson.core:jackson-databind:2.15.2")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.15.2")

@@ -74,6 +74,7 @@ class IceAdapter(
                         ),
                     )
                 } else if (message.gameState == GameState.LOBBY) {
+                    logger.trace { "Completing lobbyStateFuture" }
                     lobbyStateFuture!!.complete(Unit)
                 }
 
@@ -196,7 +197,9 @@ class IceAdapter(
     fun setIceServers(iceServers: List<CoturnServer>) {
         synchronized(coturnServers) {
             coturnServers.clear()
-            coturnServers.addAll(iceServers)
+            coturnServers.addAll(iceServers.filter {
+                it.port > 0
+            })
         }
     }
 }

@@ -10,6 +10,7 @@ import java.io.IOException
 import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.InetAddress
+import java.util.HexFormat
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.BlockingQueue
 
@@ -83,6 +84,8 @@ class LobbyConnectionProxy(
 
         while (!closing) {
             val data = inQueue.take()
+            logger.info { "Sending to faSocket: ${HexFormat.of().formatHex(data)}" }
+
             val packet =
                 DatagramPacket(data, 0, data.size, InetAddress.getLoopbackAddress(), lobbyPort)
             socket.send(packet)
