@@ -6,25 +6,53 @@ import java.io.Closeable
 import java.io.IOException
 import java.net.DatagramPacket
 import java.net.DatagramSocket
+import java.net.InetAddress
+import java.util.HexFormat
 
 private val logger = KotlinLogging.logger {}
 
 /**
- * Each remote player has an ice4j-socket that is not necessarily using UDP. But the game only sends lobby data via UDP.
+ * Each remote player has an ice4j-socket that is not necessarily using UDP. But the game only communicates lobby data
+ * via UDP.
  *
- * Thus, we use the UdpSocketBridge to forward UDP message to any kind of socket.
+ * Thus, we use the UdpSocketBridge to forward UDP message in both direction (game<->ice), with ICE being any kind of
+ * socket.
+ *
+ * Note that there are 3 sockets involved:
+ * * The game process UDP socket (aka "lobby")
+ * * The ice4j peer socket (UDP or TCP)
+ * * The UDP socket of this bridge itself
+ *
+ * But we only have a handle for our self created UDP bridge socket.
+ *
+ * The game sends to the UDP socket of this bridge. Thus, all messages received from this bridge UDP socket are always
+ * from the game. These messages need to be send to the ICE4j socket. We delegate this back to whoever has the handle
+ * to it (via injected method in the constructor).
+ *
+ * The ICE4J socket does not send directly to our UDP socket bridge. Instead, an external component will pass us the
+ * message by calling our method. We then forward this message via our UDP bridge socket to the game.
+ *
  */
 class UdpSocketBridge(
-    private val forwardTo: (ByteArray) -> Unit,
+    private val lobbyPort: Int,
+    private val forwardToIce: (ByteArray) -> Unit,
     private val name: String = "unnamed",
     bufferSize: Int = 65536,
 ) : Closeable {
+
     private val objectLock = Object()
+
+    @Volatile
     var started: Boolean = false
         private set
-    val port: Int? get() = socket?.localPort
-    private var closing: Boolean = false
-    private var socket: DatagramSocket? = null
+
+    val bridgePort: Int? get() = bridgeSocket?.localPort
+
+    @Volatile
+    var closing: Boolean = false
+        private set
+
+    private var bridgeSocket: DatagramSocket? = null
     private var readingThread: Thread? = null
     private val buffer = ByteArray(bufferSize)
 
@@ -38,16 +66,16 @@ class UdpSocketBridge(
             check(!started) { "UdpSocketBridge $name already started" }
             checkNotClosing()
 
-            socket = try {
+            bridgeSocket = try {
                 SocketFactory.createLocalUDPSocket()
             } catch (e: IOException) {
                 logger.error(e) { "Couldn't start UdpSocketBridge $name" }
                 throw e
             }
 
-            val port = socket!!.localPort
+            val port = bridgeSocket!!.localPort
 
-            readingThread = Thread { readAndForwardLoop() }
+            readingThread = Thread { gameReadAndForwardLoop() }
                 .apply { start() }
 
             started = true
@@ -55,9 +83,18 @@ class UdpSocketBridge(
         }
     }
 
+    fun forwardToGame(dataPacket: GameDataPacket) {
+        check(started) { "UdpSocketBridge $name not started yet" }
+        checkNotClosing()
+        logger.trace { "Sending to faSocket @$lobbyPort: ${HexFormat.of().formatHex(dataPacket.data)}" }
+
+        val packet = DatagramPacket(dataPacket.data, 0, dataPacket.data.size, InetAddress.getLoopbackAddress(), lobbyPort)
+        bridgeSocket!!.send(packet)
+    }
+
     @Throws(IOException::class)
-    private fun readAndForwardLoop() {
-        logger.info { "UdpSocketBridge $name is forwarding messages now" }
+    private fun gameReadAndForwardLoop() {
+        logger.info { "UdpSocketBridge $name is forwarding messages from game to ice socket now" }
 
         while (true) {
             synchronized(objectLock) {
@@ -67,9 +104,9 @@ class UdpSocketBridge(
             val packet = DatagramPacket(buffer, buffer.size)
 
             try {
-                socket!!.receive(packet)
+                bridgeSocket!!.receive(packet)
                 logger.trace { "$name: Forwarding ${packet.length} bytes" }
-                forwardTo(buffer.copyOfRange(0, packet.length - 1))
+                forwardToIce(buffer.copyOfRange(0, packet.length))
             } catch (e: Exception) {
                 if (closing) {
                     return
@@ -86,7 +123,7 @@ class UdpSocketBridge(
             readingThread?.interrupt()
             closing = true
             started = false
-            socket?.close()
+            bridgeSocket?.close()
         }
     }
 }

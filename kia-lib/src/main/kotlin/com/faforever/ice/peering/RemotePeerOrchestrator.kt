@@ -19,12 +19,12 @@ import java.util.concurrent.TimeUnit
 private val logger = KotlinLogging.logger {}
 
 class RemotePeerOrchestrator(
+    private val lobbyPort: Int,
     private val localPlayerId: Int,
     private val remotePlayerId: Int,
     override val isOfferer: Boolean,
     private val forceRelay: Boolean,
     private val coturnServers: List<CoturnServer>,
-    private val relayToLocalGame: (GameDataPacket) -> Unit,
     private val publishLocalCandidates: (CandidatesMessage) -> Unit,
     private val publishIceConnectionState: (Int, Int, String) -> Unit,
 ) : Closeable, ConnectivityCheckable {
@@ -35,7 +35,7 @@ class RemotePeerOrchestrator(
     override fun toString() =
         "RemotePeerOrchestrator(localPlayerId=$localPlayerId,remotePlayerId=$remotePlayerId,isOfferer=$isOfferer,forceRelay=$forceRelay,...)"
 
-    val udpBridgePort: Int? get() = udpSocketBridge?.port
+    val udpBridgePort: Int? get() = udpSocketBridge?.bridgePort
     private val toRemoteQueue: BlockingQueue<ProtocolPacket> = ArrayBlockingQueue(32, true)
 
     private val objectLock = Object()
@@ -62,7 +62,8 @@ class RemotePeerOrchestrator(
                 this.iceState = IceState.GATHERING
 
                 udpSocketBridge = UdpSocketBridge(
-                    forwardTo = { toRemoteQueue.put(GameDataPacket(it)) },
+                    lobbyPort = lobbyPort,
+                    forwardToIce = { toRemoteQueue.put(GameDataPacket(it)) },
                     name = "player-$remotePlayerId",
                 ).apply { start() }
 
@@ -170,7 +171,7 @@ class RemotePeerOrchestrator(
                 when {
                     data.isEmpty() -> continue
                     // Received data
-                    data[0] == GameDataPacket.PREFIX -> relayToLocalGame(GameDataPacket.fromWire(data))
+                    data[0] == GameDataPacket.PREFIX -> udpSocketBridge!!.forwardToGame(GameDataPacket.fromWire(data))
                     // Received echo req/res
                     data[0] == EchoPacket.PREFIX -> connectivityCheckHandler!!.echoReceived()
                     else -> logger.warn {
@@ -228,7 +229,7 @@ class RemotePeerOrchestrator(
 
     private fun sendToRemotePlayer(data: ProtocolPacket): Boolean =
         try {
-            checkNotNull(agent).send(data.buildWireData())
+            checkNotNull(agent).send(data.buildPrefixedWireData())
             true
         } catch (e: IOException) {
             false

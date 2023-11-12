@@ -15,7 +15,7 @@ class UdpSocketBridgeTest {
 
     @BeforeEach
     fun beforeEach() {
-        sut = UdpSocketBridge(forwardTo = { lastForwarded = it })
+        sut = UdpSocketBridge(forwardToIce = { lastForwarded = it })
     }
 
     @AfterEach
@@ -39,7 +39,7 @@ class UdpSocketBridgeTest {
 
         SocketFactory.createLocalUDPSocket().use { socket ->
             val data = "hello world".encodeToByteArray()
-            val packet = DatagramPacket(data, data.size, InetAddress.getLoopbackAddress(), sut.port!!)
+            val packet = DatagramPacket(data, data.size, InetAddress.getLoopbackAddress(), sut.bridgePort!!)
             socket.send(packet)
 
             await().untilAsserted {
