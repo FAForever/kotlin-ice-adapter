@@ -11,8 +11,6 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.oshai.kotlinlogging.withLoggingContext
 import java.io.Closeable
 import java.io.IOException
-import java.util.concurrent.ArrayBlockingQueue
-import java.util.concurrent.BlockingQueue
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 
@@ -36,7 +34,6 @@ class RemotePeerOrchestrator(
         "RemotePeerOrchestrator(localPlayerId=$localPlayerId,remotePlayerId=$remotePlayerId,isOfferer=$isOfferer,forceRelay=$forceRelay,...)"
 
     val udpBridgePort: Int? get() = udpSocketBridge?.bridgePort
-    private val toRemoteQueue: BlockingQueue<ProtocolPacket> = ArrayBlockingQueue(32, true)
 
     private val objectLock = Object()
     private var iceState: IceState = IceState.NEW
@@ -63,7 +60,7 @@ class RemotePeerOrchestrator(
 
                 udpSocketBridge = UdpSocketBridge(
                     lobbyPort = lobbyPort,
-                    forwardToIce = { toRemoteQueue.put(GameDataPacket(it)) },
+                    forwardToIce = { sendToRemotePlayer(GameDataPacket(it)) },
                     name = "player-$remotePlayerId",
                 ).apply { start() }
 
@@ -93,8 +90,6 @@ class RemotePeerOrchestrator(
                     connected = true
                     remoteListenerThread = Thread { readFromRemotePlayerLoop() }
                         .apply { start() }
-                    remoteSenderThread = Thread { sendToRemotePlayerLoop() }
-                        .apply { start() }
 
                     logger.info { "$this connected: ice port ${this.agent?.port} <-> udp bridge port ${this.udpBridgePort}" }
                 }
@@ -117,7 +112,7 @@ class RemotePeerOrchestrator(
     }
 
     override fun sendEcho() {
-        toRemoteQueue.put(EchoPacket())
+        sendToRemotePlayer(EchoPacket())
     }
 
     override fun onConnectionLost() {
@@ -194,37 +189,6 @@ class RemotePeerOrchestrator(
         }
 
         logger.debug { "No longer listening for messages from ICE" }
-    }
-
-    private fun sendToRemotePlayerLoop() {
-        while (!closing) {
-            if (!connected) {
-                Thread.sleep(500)
-                continue
-            }
-
-            when {
-                closing -> break
-                !connected -> {
-                    logger.info { "sendToRemotePlayerLoop shutdown due to connection lost" }
-                    break
-                }
-
-                else -> {
-                    val message: ProtocolPacket? = toRemoteQueue.peek()
-                    val success = if (message == null) false else sendToRemotePlayer(message)
-                    if (success) {
-                        // in case we could send successfully, discard it
-                        toRemoteQueue.remove()
-                    } else {
-                        // otherwise, we keep it and wait for better times (reconnect)
-                        Thread.sleep(500)
-                    }
-                }
-            }
-        }
-
-        logger.info { "sendToRemotePlayerLoop shutdown due to closing" }
     }
 
     private fun sendToRemotePlayer(data: ProtocolPacket): Boolean =
