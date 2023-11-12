@@ -6,7 +6,7 @@ sealed interface ProtocolPacket {
     val prefix: Byte
     fun toByteArray(): ByteArray
 
-    fun buildWireData() = byteArrayOf(prefix) + toByteArray()
+    fun buildPrefixedWireData() = byteArrayOf(prefix) + toByteArray()
 }
 
 data class GameDataPacket(val data: ByteArray) : ProtocolPacket {

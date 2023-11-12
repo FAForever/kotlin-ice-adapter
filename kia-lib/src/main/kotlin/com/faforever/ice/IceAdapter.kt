@@ -2,7 +2,6 @@ package com.faforever.ice
 
 import com.faforever.ice.connectivitycheck.ConnectivityChecker
 import com.faforever.ice.game.GameState
-import com.faforever.ice.game.LobbyConnectionProxy
 import com.faforever.ice.game.LobbyInitMode
 import com.faforever.ice.gpgnet.GpgnetMessage
 import com.faforever.ice.gpgnet.GpgnetMessage.ConnectToPeer
@@ -45,7 +44,6 @@ class IceAdapter(
         onMessage = ::onGpgnetMessage,
         onFailure = { throw it },
     )
-    private val lobbyConnectionProxy = LobbyConnectionProxy(iceOptions)
     private val connectivityChecker = ConnectivityChecker()
     private val players: MutableMap<Int, RemotePeerOrchestrator> = ConcurrentHashMap()
 //    private val telemetryClient = TelemetryClient(iceOptions, objectMapper)
@@ -53,7 +51,6 @@ class IceAdapter(
     override fun start() {
         lobbyStateFuture = CompletableFuture<Unit>()
         gpgnetProxy.start()
-        lobbyConnectionProxy.start()
         connectivityChecker.start()
     }
 
@@ -103,12 +100,12 @@ class IceAdapter(
     fun joinGame(remotePlayerLogin: String, remotePlayerId: Int) {
         logger.debug { "joinGame: remotePlayerLogin=$remotePlayerLogin, remotePlayerId=$remotePlayerId" }
         val remotePeerOrchestrator = RemotePeerOrchestrator(
+            lobbyPort = iceOptions.lobbyPort,
             localPlayerId = iceOptions.userId,
             remotePlayerId = remotePlayerId,
             isOfferer = false,
             forceRelay = iceOptions.forceRelay,
             coturnServers = coturnServers,
-            relayToLocalGame = { lobbyConnectionProxy.sendData(it.data) },
             publishLocalCandidates = onIceCandidatesGathered,
             publishIceConnectionState = onIceConnectionStateChanged,
         )
@@ -120,7 +117,7 @@ class IceAdapter(
 
         lobbyStateFuture!!.join()
 
-        logger.info { "joinGame: $remotePeerOrchestrator initialized, lobbyConnection on port ${lobbyConnectionProxy.lobbyPort}" }
+        logger.info { "joinGame: $remotePeerOrchestrator initialized" }
 
         gpgnetProxy.sendGpgnetMessage(
             JoinGame(
@@ -135,12 +132,12 @@ class IceAdapter(
         logger.debug { "connectToPeer: remotePlayerLogin=$remotePlayerLogin, remotePlayerId=$remotePlayerId" }
 
         val remotePeerOrchestrator = RemotePeerOrchestrator(
+            lobbyPort = iceOptions.lobbyPort,
             localPlayerId = iceOptions.userId,
             remotePlayerId = remotePlayerId,
             isOfferer = offer,
             forceRelay = iceOptions.forceRelay,
             coturnServers = coturnServers,
-            relayToLocalGame = { lobbyConnectionProxy.sendData(it.data) },
             publishLocalCandidates = onIceCandidatesGathered,
             publishIceConnectionState = onIceConnectionStateChanged,
         )
@@ -150,7 +147,7 @@ class IceAdapter(
 
         players[remotePlayerId] = remotePeerOrchestrator
 
-        logger.info { "connectToPeer: $remotePeerOrchestrator initialized, lobbyConnection on port ${lobbyConnectionProxy.lobbyPort}" }
+        logger.info { "connectToPeer: $remotePeerOrchestrator initialized" }
 
         lobbyStateFuture!!.join()
         gpgnetProxy.sendGpgnetMessage(
