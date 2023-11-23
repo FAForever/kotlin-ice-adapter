@@ -194,9 +194,8 @@ class IceAdapter(
     fun setIceServers(iceServers: List<CoturnServer>) {
         synchronized(coturnServers) {
             coturnServers.clear()
-            coturnServers.addAll(iceServers.filter {
-                it.port > 0
-            })
+            // On some occasions, there is no port extracted. Ignore these.
+            coturnServers.addAll(iceServers.filter { it.port > 0 })
         }
     }
 }
