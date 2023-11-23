@@ -86,6 +86,6 @@ class IceAdapterIT {
         client1.sendLobbyData(data)
         val result = client2.receiveLobbyData()
 
-        assertArrayEquals(byteArrayOf('d'.code.toByte()) + data, result)
+        assertArrayEquals(data, result)
     }
 }

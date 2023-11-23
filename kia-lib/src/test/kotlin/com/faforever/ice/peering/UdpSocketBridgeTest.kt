@@ -15,7 +15,7 @@ class UdpSocketBridgeTest {
 
     @BeforeEach
     fun beforeEach() {
-        sut = UdpSocketBridge(forwardToIce = { lastForwarded = it })
+        sut = UdpSocketBridge(forwardToIce = { lastForwarded = it }, lobbyPort = 17666)
     }
 
     @AfterEach
