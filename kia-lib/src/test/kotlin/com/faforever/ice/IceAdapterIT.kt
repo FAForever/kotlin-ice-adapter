@@ -17,8 +17,8 @@ import org.testcontainers.utility.DockerImageName
 @Testcontainers
 class IceAdapterIT {
     companion object {
-        private const val DOCKER_IMAGE_NAME: String  = "coturn/coturn";
-        private const val COTURN_SERVER_HOSTNAME: String = "test";
+        private const val DOCKER_IMAGE_NAME: String = "coturn/coturn"
+        private const val COTURN_SERVER_HOSTNAME: String = "test"
 
         @Container
         val coturnServerContainer: GenericContainer<Nothing> =
