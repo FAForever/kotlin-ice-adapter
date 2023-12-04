@@ -6,9 +6,28 @@ import com.faforever.ice.gpgnet.GpgnetMessage
 import com.faforever.ice.ice4j.CandidatesMessage
 import com.faforever.ice.peering.CoturnServer
 import org.junit.jupiter.api.Assertions.assertArrayEquals
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.testcontainers.containers.GenericContainer
+import org.testcontainers.junit.jupiter.Container
+import org.testcontainers.junit.jupiter.Testcontainers
+import org.testcontainers.utility.DockerImageName
 
+@Testcontainers
 class IceAdapterIT {
+    companion object {
+        private const val DOCKER_IMAGE_NAME: String  = "coturn/coturn";
+        private const val COTURN_SERVER_HOSTNAME: String = "test";
+
+        @Container
+        val coturnServerContainer: GenericContainer<Nothing> =
+            GenericContainer<Nothing>(DockerImageName.parse(DOCKER_IMAGE_NAME)).apply {
+                withCreateContainerCmdModifier { it.withHostName(COTURN_SERVER_HOSTNAME) }
+                withAccessToHost(true)
+            }
+    }
+
     class CandidatesTestForwarder {
         lateinit var adapter1: IceAdapter
         lateinit var adapter2: IceAdapter
@@ -20,12 +39,18 @@ class IceAdapterIT {
             adapter1.receiveIceCandidates(2, candidatesMessage)
     }
 
+    @BeforeEach
+    fun testEnv() {
+        assertTrue(coturnServerContainer.isRunning)
+    }
+
     @Test
     fun `2 ice adapters should exchange a message`() {
         val data = "hello world".encodeToByteArray()
 
         val candidatesTestForwarder = CandidatesTestForwarder()
-        val coturnServers: List<CoturnServer> = listOf(CoturnServer("stun.l.google.com", 19302))
+        // all ports are open
+        val coturnServers: List<CoturnServer> = listOf(CoturnServer(coturnServerContainer.host, 19302))
 
         val adapter1 = IceAdapter(
             iceOptions = IceOptions(
