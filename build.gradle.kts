@@ -15,6 +15,7 @@ subprojects {
     repositories {
         mavenCentral()
         maven { setUrl("https://jitpack.io") }
+        gradlePluginPortal()
     }
 
     apply(plugin = "com.adarshr.test-logger")
@@ -40,4 +41,7 @@ plugins {
     id("org.jetbrains.kotlin.plugin.allopen") version kotlinVersion apply false
     id("com.diffplug.spotless") version "6.21.0" apply false
     id("com.adarshr.test-logger") version "3.2.0" apply false
+    id("org.graalvm.buildtools.native") version "0.9.28" apply false
 }
+
+
