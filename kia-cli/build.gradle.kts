@@ -4,6 +4,7 @@ plugins {
     id("org.jetbrains.kotlin.jvm")
     id("org.jetbrains.kotlin.kapt")
     id("com.github.johnrengelman.shadow") version "8.1.1"
+    id("org.graalvm.buildtools.native")
 }
 
 dependencies {
@@ -20,6 +21,15 @@ dependencies {
     implementation("ch.qos.logback:logback-classic:$logbackVersion")
     implementation("ch.qos.logback:logback-core:$logbackVersion")
     implementation(project(":kia-lib"))
+}
+
+graalvmNative {
+    toolchainDetection.set(true)
+    binaries {
+        named("main") {
+            mainClass.set("com.faforever.ice.KiaApplication")
+        }
+    }
 }
 
 tasks {

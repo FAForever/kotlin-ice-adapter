@@ -1,0 +1,31 @@
+name: GraalVM Native Image builds
+on: [push]
+jobs:
+  build:
+    name: ICE on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: graalvm/setup-graalvm@v1
+        with:
+          java-version: '17'
+          distribution: 'graalvm'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          native-image-job-reports: 'true'
+      - name: Log info
+        run: |
+          echo "GRAALVM_HOME: $GRAALVM_HOME"
+          echo "JAVA_HOME: $JAVA_HOME"
+          java --version
+          native-image --version
+      - name: Start native compile
+        run: ./gradlew nativeCompile
+      - name: Upload binary
+        uses: actions/upload-artifact@v3
+        with:
+          name: kia-cli-${{ matrix.os }}
+          path: kia-cli/build/native/nativeCompile/kia-cli*
