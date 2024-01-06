@@ -2,6 +2,7 @@ package com.faforever.ice
 
 @JvmRecord
 data class IceOptions(
+    val accessToken: String,
     val userId: Int,
     val userName: String,
     val gameId: Int,
@@ -9,5 +10,6 @@ data class IceOptions(
     val rpcPort: Int,
     val lobbyPort: Int,
     val gpgnetPort: Int,
+    val icebreakerBaseUrl: String,
     val telemetryServer: String,
 )

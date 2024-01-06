@@ -5,12 +5,10 @@ import com.faforever.ice.IceAdapter
 import com.faforever.ice.game.LobbyInitMode
 import com.faforever.ice.gpgnet.GpgnetMessage
 import com.faforever.ice.ice4j.CandidatesMessage
-import com.faforever.ice.peering.CoturnServer
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.lang.IllegalArgumentException
-import java.net.URI
 
 private val logger = KotlinLogging.logger {}
 
@@ -59,33 +57,6 @@ class RpcHandler(
     override fun sendToGpgNet(command: String, args: List<String>) {
         val message = GpgnetMessage.ReceivedMessage(command, args).tryParse()
         iceAdapter.sendToGpgNet(message)
-    }
-
-    override fun setIceServers(iceServers: List<Map<String, Any>>) {
-        val coturnServers = iceServers.flatMap { iceServerData ->
-            val urlsData = iceServerData["urls"] ?: emptyList<String>()
-            val username = iceServerData["username"] as? String
-            val credential = iceServerData["credential"] as? String
-
-            if (urlsData is List<*>) {
-                urlsData as List<String>
-            } else {
-                listOf(iceServerData["url"] as String)
-            }
-                .map { URI(it) }
-                .map {
-                    // for now, we intentionally ignore the transport parameter for UDP/TCP
-                    // and the uri scheme (STUN/TURN)
-                    CoturnServer(
-                        hostname = it.host,
-                        port = it.port,
-                        username = username,
-                        credential = credential,
-                    )
-                }
-        }
-
-        iceAdapter.setIceServers(coturnServers)
     }
 
     override fun quit() {

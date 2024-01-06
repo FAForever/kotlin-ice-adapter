@@ -12,6 +12,5 @@ interface ControlPlane {
     fun setLobbyInitMode(lobbyInitMode: String)
     fun iceMsg(remotePlayerId: Long, message: String)
     fun sendToGpgNet(command: String, args: List<String>)
-    fun setIceServers(iceServers: List<Map<String, Any>>)
     fun quit()
 }

@@ -10,11 +10,12 @@ import com.faforever.ice.gpgnet.GpgnetMessage.HostGame
 import com.faforever.ice.gpgnet.GpgnetMessage.JoinGame
 import com.faforever.ice.gpgnet.GpgnetProxy
 import com.faforever.ice.ice4j.CandidatesMessage
+import com.faforever.ice.icebreaker.ApiClient
 import com.faforever.ice.peering.CoturnServer
 import com.faforever.ice.peering.RemotePeerOrchestrator
-import com.faforever.ice.util.ReusableComponent
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.net.InetAddress
+import java.net.URI
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 
@@ -22,6 +23,7 @@ private val logger = KotlinLogging.logger {}
 
 class IceAdapter(
     private val iceOptions: IceOptions,
+    private val apiClient: ApiClient,
     onGameConnectionStateChanged: (String) -> Unit,
     private val onGpgNetMessageReceived: (GpgnetMessage) -> Unit,
     private val onIceCandidatesGathered: (CandidatesMessage) -> Unit,
@@ -29,7 +31,7 @@ class IceAdapter(
     private val onConnected: (Int, Int, Boolean) -> Unit,
     private val onIceAdapterStopped: () -> Unit,
     initialCoturnServers: List<CoturnServer>,
-) : ReusableComponent {
+) {
 
     private val coturnServers: MutableList<CoturnServer> = ArrayList(initialCoturnServers)
     private val objectLock = Object()
@@ -37,7 +39,8 @@ class IceAdapter(
         private set
     var gameState: GameState = GameState.NONE
         private set
-    private var lobbyStateFuture: CompletableFuture<Unit>? = null
+
+    private lateinit var lobbyStateFuture: CompletableFuture<Void>
     private val gpgnetProxy = GpgnetProxy(
         iceOptions = iceOptions,
         onGameConnectionStateChanged = onGameConnectionStateChanged,
@@ -48,10 +51,36 @@ class IceAdapter(
     private val players: MutableMap<Int, RemotePeerOrchestrator> = ConcurrentHashMap()
 //    private val telemetryClient = TelemetryClient(iceOptions, objectMapper)
 
-    override fun start() {
-        lobbyStateFuture = CompletableFuture<Unit>()
-        gpgnetProxy.start()
-        connectivityChecker.start()
+    fun start(
+        accessToken: String,
+        gameId: Int,
+    ) {
+        logger.info { "Starting ICE Adapter for gameId $gameId" }
+
+        apiClient.requestSessionToken(
+            accessToken = accessToken,
+            gameId = gameId,
+        )
+            .thenCompose {
+                logger.debug { "Session token received" }
+                apiClient.requestSession(gameId)
+            }
+            .thenApply { session ->
+                logger.debug { "Coturn servers received" }
+                coturnServers.addAll(
+                    session.servers.map {
+                        CoturnServer(
+                            uri = URI.create(it.urls.first()),
+                            username = it.username,
+                            credential = it.credential,
+                        )
+                    },
+                )
+
+                lobbyStateFuture = CompletableFuture<Void>()
+                gpgnetProxy.start()
+                connectivityChecker.start()
+            }
     }
 
     private fun localDestination(port: Int) = "${InetAddress.getLoopbackAddress().hostAddress}:$port"
@@ -72,7 +101,7 @@ class IceAdapter(
                     )
                 } else if (message.gameState == GameState.LOBBY) {
                     logger.trace { "Completing lobbyStateFuture" }
-                    lobbyStateFuture!!.complete(Unit)
+                    lobbyStateFuture.complete(null)
                 }
 
                 gameState = message.gameState
@@ -93,7 +122,7 @@ class IceAdapter(
 
     fun hostGame(mapName: String) {
         logger.debug { "hostGame: mapName=$mapName" }
-        lobbyStateFuture!!.join()
+        lobbyStateFuture.join()
         gpgnetProxy.sendGpgnetMessage(HostGame(mapName))
     }
 
@@ -115,7 +144,7 @@ class IceAdapter(
 
         players[remotePlayerId] = remotePeerOrchestrator
 
-        lobbyStateFuture!!.join()
+        lobbyStateFuture.join()
 
         logger.info { "joinGame: $remotePeerOrchestrator initialized" }
 
@@ -149,7 +178,7 @@ class IceAdapter(
 
         logger.info { "connectToPeer: $remotePeerOrchestrator initialized" }
 
-        lobbyStateFuture!!.join()
+        lobbyStateFuture.join()
         gpgnetProxy.sendGpgnetMessage(
             ConnectToPeer(
                 remotePlayerLogin = remotePlayerLogin,
@@ -165,7 +194,7 @@ class IceAdapter(
         players[remotePlayerId]?.close()
         players.remove(remotePlayerId)
 
-        lobbyStateFuture!!.join()
+        lobbyStateFuture.join()
         gpgnetProxy.sendGpgnetMessage(DisconnectFromPeer(remotePlayerId))
     }
 
@@ -173,15 +202,16 @@ class IceAdapter(
         this.lobbyInitMode = lobbyInitMode
     }
 
-    override fun stop() {
+    fun stop() {
         logger.debug { "stop" }
 
         synchronized(objectLock) {
+            coturnServers.clear()
             gpgnetProxy.stop()
             connectivityChecker.stop()
             players.values.forEach { it.close() }
             players.clear()
-            lobbyStateFuture?.cancel(true)
+            lobbyStateFuture.cancel(true)
         }
         onIceAdapterStopped()
     }
@@ -189,13 +219,5 @@ class IceAdapter(
     fun sendToGpgNet(message: GpgnetMessage) {
         logger.debug { "sendToGpgNet: message=$message" }
         gpgnetProxy.sendGpgnetMessage(message)
-    }
-
-    fun setIceServers(iceServers: List<CoturnServer>) {
-        synchronized(coturnServers) {
-            coturnServers.clear()
-            // On some occasions, there is no port extracted. Ignore these.
-            coturnServers.addAll(iceServers.filter { it.port > 0 })
-        }
     }
 }

@@ -2,12 +2,15 @@ package com.faforever.ice
 
 import com.faforever.ice.gpgnet.GpgnetMessage
 import com.faforever.ice.ice4j.CandidatesMessage
+import com.faforever.ice.icebreaker.ApiClient
 import com.faforever.ice.rpc.RpcService
 import com.faforever.ice.util.SocketFactory
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import io.github.oshai.kotlinlogging.KotlinLogging
 import picocli.CommandLine
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
+import java.util.Base64
 import java.util.concurrent.Callable
 import kotlin.system.exitProcess
 
@@ -21,18 +24,18 @@ private val logger = KotlinLogging.logger {}
 )
 class KiaApplication : Callable<Int> {
 
-    @Option(names = ["--user-id", "--id"], required = true, description = ["set the ID of the local player"])
-    private var userId: Int = 0
+    @Option(names = ["--access-token", "--id"], required = true, description = ["valid FAF access token"])
+    private lateinit var accessToken: String
 
     @Option(names = ["--game-id"], required = true, description = ["set the ID of the game"])
     private var gameId: Int = 0
 
     @Option(
         names = ["--user-name", "--login"],
-        required = true,
+        required = false,
         description = ["set the login of the local player e.g. \"Rhiza\""],
     )
-    private lateinit var userName: String
+    private var userName: String? = null
 
     @Option(names = ["--force-relay"], description = ["force the usage of relay candidates only"])
     private var forceRelay: Boolean = false
@@ -49,6 +52,12 @@ class KiaApplication : Callable<Int> {
         description = ["set the port the game lobby should use for incoming UDP packets from the PeerRelay"],
     )
     private var lobbyPort: Int = 0
+
+    @Option(
+        names = ["--icebreaker-base-url"],
+        defaultValue = "https://api.faforever.com/ice",
+    )
+    private var icebreakerBaseUrl: String = ""
 
     @Option(
         names = ["--telemetry-server"],
@@ -85,32 +94,37 @@ class KiaApplication : Callable<Int> {
             lobbyPort
         }
 
+        val jwtData = decodeJWT(accessToken)
+
         iceOptions = IceOptions(
-            userId,
-            userName,
-            gameId,
-            forceRelay,
-            rpcPort,
-            realLobbyPort,
-            gpgnetPort,
-            telemetryServer,
+            accessToken = accessToken,
+            userId = jwtData.userId,
+            userName = userName ?: jwtData.userName,
+            gameId = gameId,
+            forceRelay = forceRelay,
+            rpcPort = rpcPort,
+            lobbyPort = realLobbyPort,
+            gpgnetPort = gpgnetPort,
+            icebreakerBaseUrl = icebreakerBaseUrl,
+            telemetryServer = telemetryServer,
         )
 
         iceAdapter = IceAdapter(
-            iceOptions,
-            this::onConnectionStateChanged,
-            this::onGpgNetMessageReceived,
-            this::onIceMsg,
-            this::onIceConnectionStateChanged,
-            this::onConnected,
-            this::onIceAdapterStopped,
-            emptyList(),
+            iceOptions = iceOptions,
+            apiClient = ApiClient(iceOptions, jacksonObjectMapper()),
+            onGameConnectionStateChanged = this::onConnectionStateChanged,
+            onGpgNetMessageReceived = this::onGpgNetMessageReceived,
+            onIceCandidatesGathered = this::onIceMsg,
+            onIceConnectionStateChanged = this::onIceConnectionStateChanged,
+            onConnected = this::onConnected,
+            onIceAdapterStopped = this::onIceAdapterStopped,
+            initialCoturnServers = emptyList(),
         )
 
         rpcService = RpcService(rpcPort, iceAdapter)
 
         logger.info { "Starting ICE adapter with options: $iceOptions" }
-        iceAdapter.start()
+        iceAdapter.start(accessToken = accessToken, gameId = gameId)
         rpcService.start()
 
         while (!closing) {
@@ -118,6 +132,25 @@ class KiaApplication : Callable<Int> {
         }
 
         return 0
+    }
+
+    private data class JWTData(
+        val userId: Int,
+        val userName: String,
+    )
+
+    private fun decodeJWT(accessToken: String): JWTData {
+        val body = requireNotNull(accessToken.split(".")[1]) {
+            "Access token seems invalid (no body found)"
+        }.let {
+            Base64.getDecoder().decode(it)
+        }
+
+        val json = jacksonObjectMapper().readTree(body)
+        val userId = json.get("sub").textValue().toInt()
+        val userName = json.get("ext").get("username").textValue()
+
+        return JWTData(userId, userName)
     }
 
     companion object {
