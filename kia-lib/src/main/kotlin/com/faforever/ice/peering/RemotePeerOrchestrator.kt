@@ -53,7 +53,7 @@ class RemotePeerOrchestrator(
         withLoggingContext("remotePlayerId" to remotePlayerId.toString()) {
             synchronized(objectLock) {
                 if (this.iceState.isNotIn(IceState.NEW, IceState.DISCONNECTED)) {
-                    logger.warn { "ICE already in progress, aborting re initiation. current state: ${this.iceState}" }
+                    logger.warn { "ICE already in progress, aborting reinitiation. current state: ${this.iceState}" }
                     return
                 }
                 this.iceState = IceState.GATHERING
@@ -65,17 +65,21 @@ class RemotePeerOrchestrator(
                 ).apply { start() }
 
                 this.connectivityCheckHandler = connectivityCheckHandler
-                agent = AgentWrapper(
-                    localPlayerId = localPlayerId,
-                    remotePlayerId = remotePlayerId,
-                    localOffer = isOfferer,
-                    forceRelay = forceRelay,
-                    coturnServers = coturnServers,
-                    onStateChanged = ::onIceStateChange,
-                    onCandidatesGathered = ::onLocalCandidatesGathered,
-                ).apply { start() }
+                initAgent()
             }
         }
+    }
+
+    private fun initAgent() {
+        agent = AgentWrapper(
+            localPlayerId = localPlayerId,
+            remotePlayerId = remotePlayerId,
+            localOffer = isOfferer,
+            forceRelay = forceRelay,
+            coturnServers = coturnServers,
+            onStateChanged = ::onIceStateChange,
+            onCandidatesGathered = ::onLocalCandidatesGathered,
+        ).apply { start() }
     }
 
     private fun onIceStateChange(oldState: IceState, newState: IceState) {
@@ -136,19 +140,23 @@ class RemotePeerOrchestrator(
 
                 // We were connected before, retry immediately
                 if (isOfferer) {
-                    executor.submit { reinitIce() }
+                    executor.submit { reinitializeIce() }
                 }
             } else {
                 // Last ice attempt didn't succeed, so wait a bit
-                executor.schedule({ reinitIce() }, 5, TimeUnit.SECONDS)
+                executor.schedule({ reinitializeIce() }, 5, TimeUnit.SECONDS)
             }
 
             return
         }
     }
 
-    fun reinitIce() {
-        logger.info { "Reinit ICE" }
+    private fun reinitializeIce() {
+        logger.info { "Reinitialize ICE connection for peer" }
+
+        agent?.close()
+        iceState = IceState.GATHERING
+        initAgent()
     }
 
     private fun readFromRemotePlayerLoop() {
