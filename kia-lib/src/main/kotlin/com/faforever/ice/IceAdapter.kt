@@ -13,6 +13,7 @@ import com.faforever.ice.ice4j.CandidatesMessage
 import com.faforever.ice.icebreaker.ApiClient
 import com.faforever.ice.peering.CoturnServer
 import com.faforever.ice.peering.RemotePeerOrchestrator
+import com.faforever.ice.telemetry.TelemetryClient
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.net.InetAddress
 import java.net.URI
@@ -24,6 +25,7 @@ private val logger = KotlinLogging.logger {}
 class IceAdapter(
     private val iceOptions: IceOptions,
     private val apiClient: ApiClient,
+    private val telemetryClient: TelemetryClient,
     onGameConnectionStateChanged: (String) -> Unit,
     private val onGpgNetMessageReceived: (GpgnetMessage) -> Unit,
     private val onIceCandidatesGathered: (CandidatesMessage) -> Unit,
@@ -49,7 +51,6 @@ class IceAdapter(
     )
     private val connectivityChecker = ConnectivityChecker()
     private val players: MutableMap<Int, RemotePeerOrchestrator> = ConcurrentHashMap()
-//    private val telemetryClient = TelemetryClient(iceOptions, objectMapper)
 
     fun start(
         accessToken: String,
@@ -77,6 +78,7 @@ class IceAdapter(
                     },
                 )
 
+                telemetryClient.updateCoturnList(coturnServers)
                 lobbyStateFuture = CompletableFuture<Void>()
                 gpgnetProxy.start()
                 connectivityChecker.start()
