@@ -6,6 +6,7 @@ import com.faforever.ice.gpgnet.GpgnetMessage
 import com.faforever.ice.ice4j.CandidatesMessage
 import com.faforever.ice.icebreaker.ApiClient
 import com.faforever.ice.peering.CoturnServer
+import com.faforever.ice.telemetry.TelemetryClient
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
@@ -46,6 +47,9 @@ class IceAdapterIT {
 
     @MockK
     private lateinit var apiClientMock2: ApiClient
+
+    @MockK(relaxed = true)
+    private lateinit var telemetryClientMock: TelemetryClient
 
     class CandidatesTestForwarder {
         lateinit var adapter1: IceAdapter
@@ -128,6 +132,7 @@ class IceAdapterIT {
                 telemetryServer = "telemetryServer",
             ),
             apiClient = apiClientMock1,
+            telemetryClient = telemetryClientMock,
             onGameConnectionStateChanged = {},
             onGpgNetMessageReceived = {},
             onIceCandidatesGathered = candidatesTestForwarder::onCandidatesFromA1,
@@ -157,6 +162,7 @@ class IceAdapterIT {
                 telemetryServer = "telemetryServer",
             ),
             apiClient = apiClientMock2,
+            telemetryClient = telemetryClientMock,
             onGameConnectionStateChanged = {},
             onGpgNetMessageReceived = {},
             onIceCandidatesGathered = candidatesTestForwarder::onCandidatesFromA2,
