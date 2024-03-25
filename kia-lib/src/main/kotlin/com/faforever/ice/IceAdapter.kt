@@ -13,6 +13,8 @@ import com.faforever.ice.ice4j.CandidatesMessage
 import com.faforever.ice.icebreaker.ApiClient
 import com.faforever.ice.peering.CoturnServer
 import com.faforever.ice.peering.RemotePeerOrchestrator
+import com.faforever.ice.telemetry.TelemetryClient
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.net.InetAddress
 import java.net.URI
@@ -49,7 +51,7 @@ class IceAdapter(
     )
     private val connectivityChecker = ConnectivityChecker()
     private val players: MutableMap<Int, RemotePeerOrchestrator> = ConcurrentHashMap()
-//    private val telemetryClient = TelemetryClient(iceOptions, objectMapper)
+    private val telemetryClient = TelemetryClient(iceOptions, jacksonObjectMapper())
 
     fun start(
         accessToken: String,
@@ -77,6 +79,7 @@ class IceAdapter(
                     },
                 )
 
+                telemetryClient.updateCoturnList(coturnServers)
                 lobbyStateFuture = CompletableFuture<Void>()
                 gpgnetProxy.start()
                 connectivityChecker.start()
