@@ -25,6 +25,9 @@ class TelemetryClientTest {
         every {mockIceOptions.telemetryServer } returns "wss://mock-telemetryserver.xyz:"
         every {mockIceOptions.userId } returns 5000
         every {mockIceOptions.gameId } returns 12345
+
+        mockkConstructor(TelemetryClient.TelemetryWebsocketClient::class)
+        every { anyConstructed<TelemetryClient.TelemetryWebsocketClient>().connect() } returns Unit
     }
 
     @Test
@@ -32,9 +35,6 @@ class TelemetryClientTest {
         val messageUuid = UUID.fromString("000e8400-e29b-41d4-a716-446655440000")
         mockkStatic(UUID::class)
         every { UUID.randomUUID() } returns messageUuid
-
-        mockkConstructor(TelemetryClient.TelemetryWebsocketClient::class)
-        every { anyConstructed<TelemetryClient.TelemetryWebsocketClient>().connect() } returns Unit
 
         val telemetryClient = TelemetryClient(mockIceOptions, jacksonObjectMapper())
 
@@ -52,9 +52,29 @@ class TelemetryClientTest {
                 "\"knownServers\":[" +
                   "{\"region\":\"n/a\",\"host\":\"coturn1.faforever.com\",\"port\":3478,\"averageRTT\":0.0}," +
                   "{\"region\":\"n/a\",\"host\":\"fr-turn1.xirsys.com\",\"port\":80,\"averageRTT\":0.0}]," +
-                "\"messageId\":\"000e8400-e29b-41d4-a716-446655440000\"}"
+                "\"messageId\":\"$messageUuid\"}"
             anyConstructed<TelemetryClient.TelemetryWebsocketClient>().send(expected)
         }
     }
 
+    @Test
+    fun `test update coturn servers empty`() {
+        val messageUuid = UUID.fromString("000e8400-e29b-41d4-a716-446655440000")
+        mockkStatic(UUID::class)
+        every { UUID.randomUUID() } returns messageUuid
+
+        val telemetryClient = TelemetryClient(mockIceOptions, jacksonObjectMapper())
+        val coturnServers: List<com.faforever.ice.peering.CoturnServer> = listOf()
+
+        telemetryClient.updateCoturnList(coturnServers)
+
+        verify {
+            val expected =
+                "{\"messageType\":\"UpdateCoturnList\"," +
+                  "\"connectedHost\":\"\"," +
+                  "\"knownServers\":[]," +
+                "\"messageId\":\"$messageUuid\"}"
+            anyConstructed<TelemetryClient.TelemetryWebsocketClient>().send(expected)
+        }
+    }
 }

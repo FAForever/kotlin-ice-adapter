@@ -93,7 +93,7 @@ class TelemetryClient(
             )
         }
 
-        val connectedHost:String = telemetryCoturnServers.stream().map(CoturnServer::host).findFirst().orElse(null)
+        val connectedHost:String = telemetryCoturnServers.map { it.host }.firstOrNull() ?: ""
         val message = UpdateCoturnList(connectedHost, telemetryCoturnServers, UUID.randomUUID())
         sendMessage(message)
     }
