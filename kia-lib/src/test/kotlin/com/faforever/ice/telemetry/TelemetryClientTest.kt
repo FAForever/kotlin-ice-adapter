@@ -46,7 +46,13 @@ class TelemetryClientTest {
         telemetryClient.updateCoturnList(coturnServers)
 
         verify {
-            val expected = "{\"messageType\":\"UpdateCoturnList\",\"connectedHost\":\"coturn1.faforever.com\",\"knownServers\":[{\"region\":\"n/a\",\"host\":\"coturn1.faforever.com\",\"port\":3478,\"averageRTT\":0.0},{\"region\":\"n/a\",\"host\":\"fr-turn1.xirsys.com\",\"port\":80,\"averageRTT\":0.0}],\"messageId\":\"000e8400-e29b-41d4-a716-446655440000\"}"
+            val expected =
+                "{\"messageType\":\"UpdateCoturnList\"," +
+                "\"connectedHost\":\"coturn1.faforever.com\"," +
+                "\"knownServers\":[" +
+                  "{\"region\":\"n/a\",\"host\":\"coturn1.faforever.com\",\"port\":3478,\"averageRTT\":0.0}," +
+                  "{\"region\":\"n/a\",\"host\":\"fr-turn1.xirsys.com\",\"port\":80,\"averageRTT\":0.0}]," +
+                "\"messageId\":\"000e8400-e29b-41d4-a716-446655440000\"}"
             anyConstructed<TelemetryClient.TelemetryWebsocketClient>().send(expected)
         }
     }
