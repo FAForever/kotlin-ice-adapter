@@ -8,8 +8,8 @@ import org.java_websocket.handshake.ServerHandshake
 import java.io.IOException
 import java.net.ConnectException
 import java.net.URI
-import java.util.concurrent.CompletableFuture
 import java.util.UUID
+import java.util.concurrent.CompletableFuture
 
 private val logger = KotlinLogging.logger {}
 
@@ -24,10 +24,10 @@ class TelemetryClient(
     private val websocketClient: WebSocketClient
     private var connectingFuture: CompletableFuture<Void>
 
-    inner class TelemetryWebsocketClient(serverUri: URI): WebSocketClient(serverUri) {
+    inner class TelemetryWebsocketClient(serverUri: URI) : WebSocketClient(serverUri) {
 
         override fun onOpen(handshakedata: ServerHandshake) {
-            logger.info {"Telemetry websocket opened"}
+            logger.info { "Telemetry websocket opened" }
         }
 
         override fun onMessage(message: String) {
@@ -82,18 +82,17 @@ class TelemetryClient(
         }
     }
 
-    fun updateCoturnList(servers: Collection<com.faforever.ice.peering.CoturnServer>)
-    {
+    fun updateCoturnList(servers: Collection<com.faforever.ice.peering.CoturnServer>) {
         val telemetryCoturnServers = servers.map { server ->
             CoturnServer(
                 region = "n/a",
                 host = server.uri.host,
                 port = server.uri.port,
-                averageRTT = 0.0
+                averageRTT = 0.0,
             )
         }
 
-        val connectedHost:String = telemetryCoturnServers.map { it.host }.firstOrNull() ?: ""
+        val connectedHost: String = telemetryCoturnServers.map { it.host }.firstOrNull() ?: ""
         val message = UpdateCoturnList(connectedHost, telemetryCoturnServers, UUID.randomUUID())
         sendMessage(message)
     }

@@ -8,12 +8,11 @@ import io.mockk.junit5.MockKExtension
 import io.mockk.mockkConstructor
 import io.mockk.mockkStatic
 import io.mockk.verify
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 import java.net.URI
 import java.util.UUID
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.extension.ExtendWith
-import org.junit.jupiter.api.Test
-
 
 @ExtendWith(MockKExtension::class)
 class TelemetryClientTest {
@@ -22,9 +21,9 @@ class TelemetryClientTest {
 
     @BeforeEach
     fun beforeEach() {
-        every {mockIceOptions.telemetryServer } returns "wss://mock-telemetryserver.xyz:"
-        every {mockIceOptions.userId } returns 5000
-        every {mockIceOptions.gameId } returns 12345
+        every { mockIceOptions.telemetryServer } returns "wss://mock-telemetryserver.xyz:"
+        every { mockIceOptions.userId } returns 5000
+        every { mockIceOptions.gameId } returns 12345
 
         mockkConstructor(TelemetryClient.TelemetryWebsocketClient::class)
         every { anyConstructed<TelemetryClient.TelemetryWebsocketClient>().connect() } returns Unit
@@ -40,18 +39,17 @@ class TelemetryClientTest {
 
         val coturnServers: List<com.faforever.ice.peering.CoturnServer> = listOf(
             com.faforever.ice.peering.CoturnServer(URI.create("stun://coturn1.faforever.com:3478")),
-            com.faforever.ice.peering.CoturnServer(URI.create("stun://fr-turn1.xirsys.com:80"))
+            com.faforever.ice.peering.CoturnServer(URI.create("stun://fr-turn1.xirsys.com:80")),
         )
 
         telemetryClient.updateCoturnList(coturnServers)
 
         verify {
-            val expected =
-                "{\"messageType\":\"UpdateCoturnList\"," +
+            val expected = "{\"messageType\":\"UpdateCoturnList\"," +
                 "\"connectedHost\":\"coturn1.faforever.com\"," +
                 "\"knownServers\":[" +
-                  "{\"region\":\"n/a\",\"host\":\"coturn1.faforever.com\",\"port\":3478,\"averageRTT\":0.0}," +
-                  "{\"region\":\"n/a\",\"host\":\"fr-turn1.xirsys.com\",\"port\":80,\"averageRTT\":0.0}]," +
+                "{\"region\":\"n/a\",\"host\":\"coturn1.faforever.com\",\"port\":3478,\"averageRTT\":0.0}," +
+                "{\"region\":\"n/a\",\"host\":\"fr-turn1.xirsys.com\",\"port\":80,\"averageRTT\":0.0}]," +
                 "\"messageId\":\"$messageUuid\"}"
             anyConstructed<TelemetryClient.TelemetryWebsocketClient>().send(expected)
         }
@@ -69,10 +67,9 @@ class TelemetryClientTest {
         telemetryClient.updateCoturnList(coturnServers)
 
         verify {
-            val expected =
-                "{\"messageType\":\"UpdateCoturnList\"," +
-                  "\"connectedHost\":\"\"," +
-                  "\"knownServers\":[]," +
+            val expected = "{\"messageType\":\"UpdateCoturnList\"," +
+                "\"connectedHost\":\"\"," +
+                "\"knownServers\":[]," +
                 "\"messageId\":\"$messageUuid\"}"
             anyConstructed<TelemetryClient.TelemetryWebsocketClient>().send(expected)
         }
