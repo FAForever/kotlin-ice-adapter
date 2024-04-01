@@ -53,12 +53,17 @@ class TelemetryClientTest {
         sut.updateCoturnList(coturnServers)
 
         verify {
-            val expected = "{\"messageType\":\"UpdateCoturnList\"," +
-                "\"connectedHost\":\"coturn1.faforever.com\"," +
-                "\"knownServers\":[" +
-                "{\"region\":\"n/a\",\"host\":\"coturn1.faforever.com\",\"port\":3478,\"averageRTT\":0.0}," +
-                "{\"region\":\"n/a\",\"host\":\"fr-turn1.xirsys.com\",\"port\":80,\"averageRTT\":0.0}]," +
-                "\"messageId\":\"$messageUuid\"}"
+            val expected =
+                """
+                {
+                "messageType":"UpdateCoturnList",
+                "connectedHost":"coturn1.faforever.com",
+                "knownServers":[
+                {"region":"n/a","host":"coturn1.faforever.com","port":3478,"averageRTT":0.0},
+                {"region":"n/a","host":"fr-turn1.xirsys.com","port":80,"averageRTT":0.0}],
+                "messageId":"$messageUuid"
+                }
+                """.trimIndent().replace("\n", "")
             anyConstructed<TelemetryClient.TelemetryWebsocketClient>().send(expected)
         }
     }
@@ -70,10 +75,16 @@ class TelemetryClientTest {
         sut.updateCoturnList(coturnServers)
 
         verify {
-            val expected = "{\"messageType\":\"UpdateCoturnList\"," +
-                "\"connectedHost\":\"\"," +
-                "\"knownServers\":[]," +
-                "\"messageId\":\"$messageUuid\"}"
+            val expected =
+                """
+                    {
+                    "messageType":"UpdateCoturnList",
+                    "connectedHost":"",
+                    "knownServers":[],
+                    "messageId":"$messageUuid"
+                    }
+                """.trimIndent().replace("\n", "")
+
             anyConstructed<TelemetryClient.TelemetryWebsocketClient>().send(expected)
         }
     }
