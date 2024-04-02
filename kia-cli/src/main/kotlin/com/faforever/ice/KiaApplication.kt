@@ -4,6 +4,7 @@ import com.faforever.ice.gpgnet.GpgnetMessage
 import com.faforever.ice.ice4j.CandidatesMessage
 import com.faforever.ice.icebreaker.ApiClient
 import com.faforever.ice.rpc.RpcService
+import com.faforever.ice.telemetry.TelemetryClient
 import com.faforever.ice.util.SocketFactory
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -112,6 +113,7 @@ class KiaApplication : Callable<Int> {
         iceAdapter = IceAdapter(
             iceOptions = iceOptions,
             apiClient = ApiClient(iceOptions, jacksonObjectMapper()),
+            telemetryClient = TelemetryClient(iceOptions, jacksonObjectMapper()),
             onGameConnectionStateChanged = this::onConnectionStateChanged,
             onGpgNetMessageReceived = this::onGpgNetMessageReceived,
             onIceCandidatesGathered = this::onIceMsg,
