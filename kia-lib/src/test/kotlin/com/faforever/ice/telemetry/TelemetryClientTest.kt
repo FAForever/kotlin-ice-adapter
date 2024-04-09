@@ -28,8 +28,10 @@ class TelemetryClientTest {
     @BeforeEach
     fun beforeEach() {
         every { mockIceOptions.telemetryServer } returns "wss://mock-telemetryserver.xyz:"
+        every { mockIceOptions.userName } returns "Player1"
         every { mockIceOptions.userId } returns 5000
         every { mockIceOptions.gameId } returns 12345
+
         mockkStatic(UUID::class)
         every { UUID.randomUUID() } returns messageUuid
 
@@ -41,6 +43,24 @@ class TelemetryClientTest {
     @AfterEach
     fun afterEach() {
         unmockkStatic(UUID::class)
+    }
+
+    @Test
+    fun `test init connects and registers as peer`() {
+        verify {
+            anyConstructed<TelemetryClient.TelemetryWebsocketClient>().connect()
+
+            val expected =
+                """
+                {
+                "messageType":"RegisterAsPeer",
+                "adapterVersion":"kotlin-ice-adapter/1.0-SNAPSHOT",
+                "userName":"Player1",
+                "messageId":"$messageUuid"
+                }
+                """.trimIndent().replace("\n", "")
+            anyConstructed<TelemetryClient.TelemetryWebsocketClient>().send(expected)
+        }
     }
 
     @Test

@@ -14,12 +14,10 @@ import java.util.concurrent.CompletableFuture
 private val logger = KotlinLogging.logger {}
 
 class TelemetryClient(
-    iceOptions: IceOptions,
+    private val iceOptions: IceOptions,
     private val objectMapper: ObjectMapper,
 ) {
     private val serverBaseUrl = iceOptions.telemetryServer
-    private val gameId = iceOptions.gameId
-    private val userId = iceOptions.userId
 
     private val websocketClient: WebSocketClient
     private var connectingFuture: CompletableFuture<Void>
@@ -56,13 +54,14 @@ class TelemetryClient(
                     "ws",
                     "http",
                 )
-            }/app.html?gameId=$gameId&playerId=$userId"
+            }/app.html?gameId=${iceOptions.gameId}&playerId=${iceOptions.userId}"
         }
 
-        val uri: URI = URI.create("$serverBaseUrl/adapter/v1/game/$gameId/player/$userId")
+        val uri: URI = URI.create("$serverBaseUrl/adapter/v1/game/${iceOptions.gameId}/player/${iceOptions.userId}")
         websocketClient = TelemetryWebsocketClient(uri)
 
         connectingFuture = connectAsync()
+        registerAsPeer()
     }
 
     private fun connectAsync() = CompletableFuture.runAsync(websocketClient::connect)
@@ -80,6 +79,16 @@ class TelemetryClient(
                 logger.error(e) { "Error on serialising message object: $message" }
             }
         }
+    }
+
+    private fun registerAsPeer() {
+        val iceAdapterVersion = "1.0-SNAPSHOT"
+        val message = RegisterAsPeer(
+            "kotlin-ice-adapter/$iceAdapterVersion",
+            iceOptions.userName,
+            UUID.randomUUID(),
+        )
+        sendMessage(message)
     }
 
     fun updateCoturnList(servers: Collection<com.faforever.ice.peering.CoturnServer>) {
