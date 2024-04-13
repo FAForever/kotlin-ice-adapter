@@ -10,7 +10,7 @@ jobs:
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: '21.0.1'
       - name: Get tag or branch
         id: get_tag_or_branch
         run: |
