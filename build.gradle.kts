@@ -1,4 +1,5 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import java.util.Properties
 
 subprojects {
     group = "com.faforever.ice"
@@ -8,6 +9,15 @@ subprojects {
         withType<KotlinCompile> {
             kotlinOptions {
                 jvmTarget = "17"
+            }
+        }
+        withType<ProcessResources> {
+            doLast {
+                val buildPropertiesFile = file("${layout.buildDirectory.get()}/resources/main/build.properties")
+                buildPropertiesFile.parentFile.mkdirs()
+                val properties = Properties()
+                properties.setProperty("iceAdapterVersion", version.toString())
+                buildPropertiesFile.writer().use { properties.store(it, null) }
             }
         }
     }

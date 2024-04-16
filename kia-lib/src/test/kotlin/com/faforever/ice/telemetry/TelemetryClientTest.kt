@@ -1,11 +1,13 @@
 package com.faforever.ice.telemetry
 
 import com.faforever.ice.IceOptions
+import com.faforever.ice.util.BuildProperties
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
 import io.mockk.junit5.MockKExtension
 import io.mockk.mockkConstructor
+import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.unmockkStatic
 import io.mockk.verify
@@ -35,6 +37,9 @@ class TelemetryClientTest {
         mockkStatic(UUID::class)
         every { UUID.randomUUID() } returns messageUuid
 
+        mockkObject(BuildProperties)
+        every { BuildProperties.iceAdapterVersion } returns "9.9.9-SNAPSHOT"
+
         mockkConstructor(TelemetryClient.TelemetryWebsocketClient::class)
         every { anyConstructed<TelemetryClient.TelemetryWebsocketClient>().connect() } returns Unit
         sut = TelemetryClient(mockIceOptions, jacksonObjectMapper())
@@ -54,7 +59,7 @@ class TelemetryClientTest {
                 """
                 {
                 "messageType":"RegisterAsPeer",
-                "adapterVersion":"kotlin-ice-adapter/1.0-SNAPSHOT",
+                "adapterVersion":"kotlin-ice-adapter/9.9.9-SNAPSHOT",
                 "userName":"Player1",
                 "messageId":"$messageUuid"
                 }
