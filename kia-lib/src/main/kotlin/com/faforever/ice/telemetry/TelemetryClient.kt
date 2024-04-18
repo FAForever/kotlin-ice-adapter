@@ -86,7 +86,6 @@ class TelemetryClient(
         val message = RegisterAsPeer(
             "kotlin-ice-adapter/${BuildProperties.iceAdapterVersion}",
             iceOptions.userName,
-            UUID.randomUUID(),
         )
         sendMessage(message)
     }
