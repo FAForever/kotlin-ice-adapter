@@ -41,7 +41,7 @@ tasks {
         manifest {
             attributes(mapOf(
                 "Main-Class" to "com.faforever.ice.KiaApplication",
-                "Implementation-Version" to archiveVersion,
+                "Implementation-Version" to version,
             ))
         }
     }
