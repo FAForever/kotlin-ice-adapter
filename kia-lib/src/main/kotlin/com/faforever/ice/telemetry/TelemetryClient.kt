@@ -1,7 +1,7 @@
 package com.faforever.ice.telemetry
 
+import com.faforever.ice.IceAdapter
 import com.faforever.ice.IceOptions
-import com.faforever.ice.util.BuildProperties
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.java_websocket.client.WebSocketClient
@@ -84,7 +84,7 @@ class TelemetryClient(
 
     private fun registerAsPeer() {
         val message = RegisterAsPeer(
-            "kotlin-ice-adapter/${BuildProperties.iceAdapterVersion}",
+            "kotlin-ice-adapter/${IceAdapter.version}",
             iceOptions.userName,
         )
         sendMessage(message)

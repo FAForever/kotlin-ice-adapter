@@ -1,7 +1,7 @@
 package com.faforever.ice.telemetry
 
+import com.faforever.ice.IceAdapter
 import com.faforever.ice.IceOptions
-import com.faforever.ice.util.BuildProperties
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
@@ -37,8 +37,8 @@ class TelemetryClientTest {
         mockkStatic(UUID::class)
         every { UUID.randomUUID() } returns messageUuid
 
-        mockkObject(BuildProperties)
-        every { BuildProperties.iceAdapterVersion } returns "9.9.9-SNAPSHOT"
+        mockkObject(IceAdapter)
+        every { IceAdapter.version } returns "9.9.9-SNAPSHOT"
 
         mockkConstructor(TelemetryClient.TelemetryWebsocketClient::class)
         every { anyConstructed<TelemetryClient.TelemetryWebsocketClient>().connect() } returns Unit
