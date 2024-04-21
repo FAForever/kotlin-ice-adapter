@@ -15,6 +15,7 @@ data class CoturnServer(
 
     fun toUDPTransport() = TransportAddress(
         uri.host,
-        if(uri.port == -1) DEFAULT_PORT else uri.port,
-        Transport.UDP)
+        if (uri.port == -1) DEFAULT_PORT else uri.port,
+        Transport.UDP,
+    )
 }
