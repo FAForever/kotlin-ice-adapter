@@ -25,7 +25,7 @@ private val logger = KotlinLogging.logger {}
 )
 class KiaApplication : Callable<Int> {
 
-    @Option(names = ["--access-token", "--id"], required = true, description = ["valid FAF access token"])
+    @Option(names = ["--access-token"], required = true, description = ["valid FAF access token"])
     private lateinit var accessToken: String
 
     @Option(names = ["--game-id"], required = true, description = ["set the ID of the game"])
