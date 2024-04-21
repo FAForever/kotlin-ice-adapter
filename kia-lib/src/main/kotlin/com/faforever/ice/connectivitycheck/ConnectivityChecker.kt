@@ -161,7 +161,10 @@ class ConnectivityChecker(
                         handler.connectionState = handler.connectionState.copy(
                             iceState = IceState.DISCONNECTED,
                         )
+                        logger.info { "Dead connection detected for $connectivityCheckable" }
                         sharedExecutor.submit(connectivityCheckable::onConnectionLost)
+                    } else {
+                        logger.debug { "Ignore dead connection from $connectivityCheckable, as state is already disconnected." }
                     }
                 }
             }

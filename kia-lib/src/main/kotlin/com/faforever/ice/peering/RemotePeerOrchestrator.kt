@@ -128,7 +128,7 @@ class RemotePeerOrchestrator(
             val previousState = iceState
             if (connected) {
                 connected = false
-                logger.warn { "ICE connection has been lost for peer " }
+                logger.warn { "ICE connection has been lost for peer $remotePlayerId" }
                 logger.debug { "Notify FAF client" }
             }
 
