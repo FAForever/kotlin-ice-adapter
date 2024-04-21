@@ -11,6 +11,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import picocli.CommandLine
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
+import picocli.CommandLine.Unmatched
 import java.util.Base64
 import java.util.concurrent.Callable
 import kotlin.system.exitProcess
@@ -66,6 +67,9 @@ class KiaApplication : Callable<Int> {
         description = ["Telemetry server to connect to"],
     )
     private var telemetryServer: String = ""
+
+    @Unmatched
+    private var unmatchedOptions: MutableList<String> = mutableListOf()
 
     private var closing: Boolean = false
 
