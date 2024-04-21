@@ -9,5 +9,12 @@ data class CoturnServer(
     val username: String? = null,
     val credential: String? = null,
 ) {
-    fun toUDPTransport() = TransportAddress(uri.host, uri.port, Transport.UDP)
+    companion object {
+        const val DEFAULT_PORT = 3478
+    }
+
+    fun toUDPTransport() = TransportAddress(
+        uri.host,
+        if(uri.port == -1) DEFAULT_PORT else uri.port,
+        Transport.UDP)
 }
