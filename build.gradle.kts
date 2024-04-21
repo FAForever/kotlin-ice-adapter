@@ -2,7 +2,9 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 subprojects {
     group = "com.faforever.ice"
-    version = "1.0-SNAPSHOT"
+
+    // Read from gradle.properties
+    version = "$version"
 
     tasks {
         withType<KotlinCompile> {

@@ -34,6 +34,11 @@ class IceAdapter(
     private val onIceAdapterStopped: () -> Unit,
     initialCoturnServers: List<CoturnServer>,
 ) {
+    companion object {
+        val version by lazy {
+            IceAdapter::class.java.getPackage().implementationVersion ?: "SNAPSHOT"
+        }
+    }
 
     private val coturnServers: MutableList<CoturnServer> = ArrayList(initialCoturnServers)
     private val objectLock = Object()

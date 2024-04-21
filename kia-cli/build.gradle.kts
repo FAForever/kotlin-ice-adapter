@@ -39,7 +39,12 @@ tasks {
 
     named<ShadowJar>("shadowJar") {
         manifest {
-            attributes(mapOf("Main-Class" to "com.faforever.ice.KiaApplication"))
+            attributes(
+                mapOf(
+                    "Main-Class" to "com.faforever.ice.KiaApplication",
+                    "Implementation-Version" to version,
+                ),
+            )
         }
     }
 }

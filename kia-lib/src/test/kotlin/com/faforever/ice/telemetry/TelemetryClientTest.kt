@@ -1,11 +1,13 @@
 package com.faforever.ice.telemetry
 
+import com.faforever.ice.IceAdapter
 import com.faforever.ice.IceOptions
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
 import io.mockk.junit5.MockKExtension
 import io.mockk.mockkConstructor
+import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.unmockkStatic
 import io.mockk.verify
@@ -28,10 +30,15 @@ class TelemetryClientTest {
     @BeforeEach
     fun beforeEach() {
         every { mockIceOptions.telemetryServer } returns "wss://mock-telemetryserver.xyz:"
+        every { mockIceOptions.userName } returns "Player1"
         every { mockIceOptions.userId } returns 5000
         every { mockIceOptions.gameId } returns 12345
+
         mockkStatic(UUID::class)
         every { UUID.randomUUID() } returns messageUuid
+
+        mockkObject(IceAdapter)
+        every { IceAdapter.version } returns "9.9.9-SNAPSHOT"
 
         mockkConstructor(TelemetryClient.TelemetryWebsocketClient::class)
         every { anyConstructed<TelemetryClient.TelemetryWebsocketClient>().connect() } returns Unit
@@ -41,6 +48,24 @@ class TelemetryClientTest {
     @AfterEach
     fun afterEach() {
         unmockkStatic(UUID::class)
+    }
+
+    @Test
+    fun `test init connects and registers as peer`() {
+        verify {
+            anyConstructed<TelemetryClient.TelemetryWebsocketClient>().connect()
+
+            val expected =
+                """
+                {
+                "messageType":"RegisterAsPeer",
+                "adapterVersion":"kotlin-ice-adapter/9.9.9-SNAPSHOT",
+                "userName":"Player1",
+                "messageId":"$messageUuid"
+                }
+                """.trimIndent().replace("\n", "")
+            anyConstructed<TelemetryClient.TelemetryWebsocketClient>().send(expected)
+        }
     }
 
     @Test
