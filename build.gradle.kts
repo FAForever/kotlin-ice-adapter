@@ -36,14 +36,11 @@ subprojects {
 }
 
 plugins {
-    val kotlinVersion = "1.9.22"
-
-    id("org.jetbrains.kotlin.jvm") version kotlinVersion apply false
-    id("org.jetbrains.kotlin.kapt") version kotlinVersion apply false
-    id("org.jetbrains.kotlin.plugin.allopen") version kotlinVersion apply false
-    id("com.diffplug.spotless") version "6.21.0" apply false
-    id("com.adarshr.test-logger") version "3.2.0" apply false
-    id("org.graalvm.buildtools.native") version "0.9.28" apply false
+    alias(libs.plugins.kotlin.jvm) apply false
+    alias(libs.plugins.kotlin.kapt) apply false
+    alias(libs.plugins.spotless) apply false
+    alias(libs.plugins.test.logger) apply false
+    alias(libs.plugins.buildtools.native) apply false
 }
 
 

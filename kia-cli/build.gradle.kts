@@ -1,25 +1,23 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 
 plugins {
-    id("org.jetbrains.kotlin.jvm")
-    id("org.jetbrains.kotlin.kapt")
-    id("com.github.johnrengelman.shadow") version "8.1.1"
-    id("org.graalvm.buildtools.native")
+    alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.kotlin.kapt)
+    alias(libs.plugins.johnrengelman.shadow)
+    alias(libs.plugins.buildtools.native)
 }
 
 dependencies {
-    val picocliVersion = "4.7.5"
-    val logbackVersion = "1.5.4"
-    kapt("info.picocli:picocli-codegen:$picocliVersion")
-    implementation("com.fasterxml.jackson.core:jackson-databind:2.17.0")
-    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.17.0")
-    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.17.0")
-    implementation("com.github.faforever:JJsonRpc:37669e0fed")
-    implementation("info.picocli:picocli:$picocliVersion")
-    implementation("io.github.oshai:kotlin-logging-jvm:6.0.4")
-    implementation("org.slf4j:slf4j-api:2.0.12")
-    implementation("ch.qos.logback:logback-classic:$logbackVersion")
-    implementation("ch.qos.logback:logback-core:$logbackVersion")
+    kapt(libs.picocli.codegen)
+    implementation(libs.picocli)
+    implementation(libs.slf4j.api)
+    implementation(libs.jackson.databind)
+    implementation(libs.jackson.module.kotlin)
+    implementation(libs.jackson.datatype.jsr310)
+    implementation(libs.jjsonrpc)
+    implementation(libs.kotlin.logging.jvm)
+    implementation(libs.logback.classic)
+    implementation(libs.logback.core)
     implementation(project(":kia-lib"))
 }
 
