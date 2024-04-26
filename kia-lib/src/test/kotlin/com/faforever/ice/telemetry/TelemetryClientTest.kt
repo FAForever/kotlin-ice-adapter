@@ -55,6 +55,7 @@ class TelemetryClientTest {
     @Test
     fun `test init connects and registers as peer`() {
         verify(timeout = 1000) {
+            anyConstructed<TelemetryClient.TelemetryWebsocketClient>().connectBlocking()
             val expected =
                 """
                 {
