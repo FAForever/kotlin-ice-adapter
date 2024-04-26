@@ -11,6 +11,8 @@ import java.net.ConnectException
 import java.net.URI
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.TimeUnit
 
 private val logger = KotlinLogging.logger {}
 
@@ -20,8 +22,10 @@ class TelemetryClient(
 ) {
     private val serverBaseUrl = iceOptions.telemetryServer
 
-    private val websocketClient: WebSocketClient
-    private var connectingFuture: CompletableFuture<Void>
+    private var websocketClient: WebSocketClient
+    private val sendingLoopThread: Thread
+    private var connectionRetryAttempts = 0
+    private val messageQueue = LinkedBlockingQueue<OutgoingMessageV1>()
 
     inner class TelemetryWebsocketClient(serverUri: URI) : WebSocketClient(serverUri) {
 
@@ -36,7 +40,6 @@ class TelemetryClient(
 
         override fun onClose(code: Int, reason: String, remote: Boolean) {
             logger.info { "Telemetry websocket closed (reason: $reason). Trying to reconnect!" }
-            connectingFuture = connectAsync()
         }
 
         override fun onError(ex: Exception) {
@@ -51,33 +54,47 @@ class TelemetryClient(
     init {
         logger.info {
             "Open the telemetry ui via ${
-                serverBaseUrl.replaceFirst(
-                    "ws",
-                    "http",
-                )
+                serverBaseUrl.replaceFirst("ws", "http")
             }/app.html?gameId=${iceOptions.gameId}&playerId=${iceOptions.userId}"
         }
 
         val uri: URI = URI.create("$serverBaseUrl/adapter/v1/game/${iceOptions.gameId}/player/${iceOptions.userId}")
         websocketClient = TelemetryWebsocketClient(uri)
 
-        connectingFuture = connectAsync()
+        sendingLoopThread = Thread(this::sendingLoop)
+        sendingLoopThread.uncaughtExceptionHandler = Thread.UncaughtExceptionHandler { _: Thread?, e: Throwable? ->
+            logger.error { "Thread sendingLoop crashed unexpectedly: $e" }
+        }
+
+        CompletableFuture.runAsync {
+            websocketClient.connectBlocking()
+            sendingLoopThread.start()
+        }
+
         registerAsPeer()
     }
 
-    private fun connectAsync() = CompletableFuture.runAsync(websocketClient::connect)
-        .exceptionally {
-            logger.error(it) { "Failed to connect to telemetry websocket" }
-            null
-        }
+    private fun sendingLoop() {
+        while (true) {
+            val message = messageQueue.take()
 
-    private fun sendMessage(message: OutgoingMessageV1) {
-        connectingFuture.thenRun {
+            while (websocketClient.isClosed) {
+                // Before reconnecting delay 2, 8, 32, 64, 64, 64... seconds.
+                val delay = 2.shl((2 * connectionRetryAttempts).coerceAtMost(5))
+                TimeUnit.SECONDS.sleep(delay.toLong())
+                logger.info { "Attempting reconnect to telemetry server..." }
+                websocketClient.reconnectBlocking()
+                connectionRetryAttempts++
+            }
+            connectionRetryAttempts = 0
+
             try {
                 val json = objectMapper.writeValueAsString(message)
                 websocketClient.send(json)
             } catch (e: IOException) {
-                logger.error(e) { "Error on serialising message object: $message" }
+                logger.error(e) { "Error serialising message object: $message" }
+            } catch (e: Exception) {
+                logger.error(e) { "Error sending message object: $message" }
             }
         }
     }
@@ -87,7 +104,7 @@ class TelemetryClient(
             "kotlin-ice-adapter/${IceAdapter.version}",
             iceOptions.userName,
         )
-        sendMessage(message)
+        messageQueue.put(message)
     }
 
     fun updateCoturnList(servers: Collection<com.faforever.ice.peering.CoturnServer>) {
@@ -102,6 +119,6 @@ class TelemetryClient(
 
         val connectedHost: String = telemetryCoturnServers.map { it.host }.firstOrNull() ?: ""
         val message = UpdateCoturnList(connectedHost, telemetryCoturnServers, UUID.randomUUID())
-        sendMessage(message)
+        messageQueue.put(message)
     }
 }

@@ -41,7 +41,9 @@ class TelemetryClientTest {
         every { IceAdapter.version } returns "9.9.9-SNAPSHOT"
 
         mockkConstructor(TelemetryClient.TelemetryWebsocketClient::class)
-        every { anyConstructed<TelemetryClient.TelemetryWebsocketClient>().connect() } returns Unit
+        every { anyConstructed<TelemetryClient.TelemetryWebsocketClient>().connectBlocking() } returns true
+        every { anyConstructed<TelemetryClient.TelemetryWebsocketClient>().send(any<String>()) } returns Unit
+
         sut = TelemetryClient(mockIceOptions, jacksonObjectMapper())
     }
 
@@ -52,9 +54,7 @@ class TelemetryClientTest {
 
     @Test
     fun `test init connects and registers as peer`() {
-        verify {
-            anyConstructed<TelemetryClient.TelemetryWebsocketClient>().connect()
-
+        verify(timeout = 1000) {
             val expected =
                 """
                 {
@@ -77,7 +77,7 @@ class TelemetryClientTest {
 
         sut.updateCoturnList(coturnServers)
 
-        verify {
+        verify(timeout = 1000) {
             val expected =
                 """
                 {
@@ -99,7 +99,7 @@ class TelemetryClientTest {
 
         sut.updateCoturnList(coturnServers)
 
-        verify {
+        verify(timeout = 1000) {
             val expected =
                 """
                     {
