@@ -11,6 +11,7 @@ import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.unmockkStatic
 import io.mockk.verify
+import org.awaitility.Awaitility.await
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -43,6 +44,7 @@ class TelemetryClientTest {
         mockkConstructor(TelemetryClient.TelemetryWebsocketClient::class)
         every { anyConstructed<TelemetryClient.TelemetryWebsocketClient>().connectBlocking() } returns true
         every { anyConstructed<TelemetryClient.TelemetryWebsocketClient>().send(any<String>()) } returns Unit
+        every { anyConstructed<TelemetryClient.TelemetryWebsocketClient>().isOpen } returns true
 
         sut = TelemetryClient(mockIceOptions, jacksonObjectMapper())
     }
@@ -54,18 +56,22 @@ class TelemetryClientTest {
 
     @Test
     fun `test init connects and registers as peer`() {
-        verify(timeout = 1000) {
-            anyConstructed<TelemetryClient.TelemetryWebsocketClient>().connectBlocking()
-            val expected =
-                """
-                {
-                "messageType":"RegisterAsPeer",
-                "adapterVersion":"kotlin-ice-adapter/9.9.9-SNAPSHOT",
-                "userName":"Player1",
-                "messageId":"$messageUuid"
-                }
-                """.trimIndent().replace("\n", "")
-            anyConstructed<TelemetryClient.TelemetryWebsocketClient>().send(expected)
+        sut = TelemetryClient(mockIceOptions, jacksonObjectMapper())
+
+        await().untilAsserted {
+            verify {
+                anyConstructed<TelemetryClient.TelemetryWebsocketClient>().connectBlocking()
+                val expected =
+                    """
+                        {
+                        "messageType":"RegisterAsPeer",
+                        "adapterVersion":"kotlin-ice-adapter/9.9.9-SNAPSHOT",
+                        "userName":"Player1",
+                        "messageId":"$messageUuid"
+                        }
+                    """.trimIndent().replace("\n", "")
+                anyConstructed<TelemetryClient.TelemetryWebsocketClient>().send(expected)
+            }
         }
     }
 
@@ -78,19 +84,21 @@ class TelemetryClientTest {
 
         sut.updateCoturnList(coturnServers)
 
-        verify(timeout = 1000) {
-            val expected =
-                """
-                {
-                "messageType":"UpdateCoturnList",
-                "connectedHost":"coturn1.faforever.com",
-                "knownServers":[
-                {"region":"n/a","host":"coturn1.faforever.com","port":3478,"averageRTT":0.0},
-                {"region":"n/a","host":"fr-turn1.xirsys.com","port":80,"averageRTT":0.0}],
-                "messageId":"$messageUuid"
-                }
-                """.trimIndent().replace("\n", "")
-            anyConstructed<TelemetryClient.TelemetryWebsocketClient>().send(expected)
+        await().untilAsserted {
+            verify {
+                val expected =
+                    """
+                    {
+                    "messageType":"UpdateCoturnList",
+                    "connectedHost":"coturn1.faforever.com",
+                    "knownServers":[
+                    {"region":"n/a","host":"coturn1.faforever.com","port":3478,"averageRTT":0.0},
+                    {"region":"n/a","host":"fr-turn1.xirsys.com","port":80,"averageRTT":0.0}],
+                    "messageId":"$messageUuid"
+                    }
+                    """.trimIndent().replace("\n", "")
+                anyConstructed<TelemetryClient.TelemetryWebsocketClient>().send(expected)
+            }
         }
     }
 
@@ -100,18 +108,20 @@ class TelemetryClientTest {
 
         sut.updateCoturnList(coturnServers)
 
-        verify(timeout = 1000) {
-            val expected =
-                """
-                    {
-                    "messageType":"UpdateCoturnList",
-                    "connectedHost":"",
-                    "knownServers":[],
-                    "messageId":"$messageUuid"
-                    }
-                """.trimIndent().replace("\n", "")
+        await().untilAsserted {
+            verify {
+                val expected =
+                    """
+                        {
+                        "messageType":"UpdateCoturnList",
+                        "connectedHost":"",
+                        "knownServers":[],
+                        "messageId":"$messageUuid"
+                        }
+                    """.trimIndent().replace("\n", "")
 
-            anyConstructed<TelemetryClient.TelemetryWebsocketClient>().send(expected)
+                anyConstructed<TelemetryClient.TelemetryWebsocketClient>().send(expected)
+            }
         }
     }
 }

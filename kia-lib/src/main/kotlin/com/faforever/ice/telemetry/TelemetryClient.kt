@@ -3,16 +3,18 @@ package com.faforever.ice.telemetry
 import com.faforever.ice.IceAdapter
 import com.faforever.ice.IceOptions
 import com.fasterxml.jackson.databind.ObjectMapper
+import dev.failsafe.Failsafe
+import dev.failsafe.RetryPolicy
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.java_websocket.client.WebSocketClient
 import org.java_websocket.handshake.ServerHandshake
 import java.io.IOException
 import java.net.ConnectException
 import java.net.URI
+import java.time.Duration
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.LinkedBlockingQueue
-import java.util.concurrent.TimeUnit
 
 private val logger = KotlinLogging.logger {}
 
@@ -24,8 +26,12 @@ class TelemetryClient(
 
     private var websocketClient: WebSocketClient
     private val sendingLoopThread: Thread
-    private var connectionRetryAttempts = 0
     private val messageQueue = LinkedBlockingQueue<OutgoingMessageV1>()
+
+    // True if we have given up trying to connect to the telemetry server.
+    private var connectionFailed = false
+
+    private enum class ConnectionResult { SUCCESS, FAILURE }
 
     inner class TelemetryWebsocketClient(serverUri: URI) : WebSocketClient(serverUri) {
 
@@ -75,28 +81,45 @@ class TelemetryClient(
     }
 
     private fun sendingLoop() {
-        while (true) {
+        while (!connectionFailed) {
             val message = messageQueue.take()
 
-            while (websocketClient.isClosed) {
-                // Before reconnecting delay 2, 8, 32, 64, 64, 64... seconds.
-                val delay = 2.shl((2 * connectionRetryAttempts).coerceAtMost(5))
-                TimeUnit.SECONDS.sleep(delay.toLong())
-                logger.info { "Attempting reconnect to telemetry server..." }
-                websocketClient.reconnectBlocking()
-                connectionRetryAttempts++
+            if (websocketClient.isClosed) {
+                Failsafe.with(
+                    RetryPolicy.builder<ConnectionResult>()
+                        .handleResult(ConnectionResult.FAILURE)
+                        .withBackoff(Duration.ofSeconds(2), Duration.ofMinutes(1))
+                        .withMaxRetries(6)
+                        .build(),
+                )
+                    .onFailure {
+                        logger.info { "Failed to reconnect to the telemetry server after ${it.attemptCount} attempts." }
+                        connectionFailed = true
+                    }
+                    .get { _ ->
+                        logger.info { "Attempting reconnect to telemetry server..." }
+                        websocketClient.reconnectBlocking()
+                        if (websocketClient.isOpen) ConnectionResult.SUCCESS else ConnectionResult.FAILURE
+                    }
             }
-            connectionRetryAttempts = 0
-
-            try {
-                val json = objectMapper.writeValueAsString(message)
-                websocketClient.send(json)
-            } catch (e: IOException) {
-                logger.error(e) { "Error serialising message object: $message" }
-            } catch (e: Exception) {
-                logger.error(e) { "Error sending message object: $message" }
+            if (websocketClient.isOpen) {
+                try {
+                    val json = objectMapper.writeValueAsString(message)
+                    websocketClient.send(json)
+                } catch (e: IOException) {
+                    logger.error(e) { "Error serialising message object: $message" }
+                } catch (e: Exception) {
+                    logger.error(e) { "Error sending message object: $message" }
+                }
             }
         }
+    }
+
+    private fun sendMessage(message: OutgoingMessageV1) {
+        if (connectionFailed) {
+            return
+        }
+        messageQueue.put(message)
     }
 
     private fun registerAsPeer() {
@@ -104,7 +127,7 @@ class TelemetryClient(
             "kotlin-ice-adapter/${IceAdapter.version}",
             iceOptions.userName,
         )
-        messageQueue.put(message)
+        sendMessage(message)
     }
 
     fun updateCoturnList(servers: Collection<com.faforever.ice.peering.CoturnServer>) {
@@ -119,6 +142,6 @@ class TelemetryClient(
 
         val connectedHost: String = telemetryCoturnServers.map { it.host }.firstOrNull() ?: ""
         val message = UpdateCoturnList(connectedHost, telemetryCoturnServers, UUID.randomUUID())
-        messageQueue.put(message)
+        sendMessage(message)
     }
 }
