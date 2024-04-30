@@ -21,6 +21,7 @@ private val logger = KotlinLogging.logger {}
 class TelemetryClient(
     private val iceOptions: IceOptions,
     private val objectMapper: ObjectMapper,
+    private val connectionRetries: Int = 6,
 ) {
     private val serverBaseUrl = iceOptions.telemetryServer
 
@@ -89,7 +90,7 @@ class TelemetryClient(
                     RetryPolicy.builder<ConnectionResult>()
                         .handleResult(ConnectionResult.FAILURE)
                         .withBackoff(Duration.ofSeconds(2), Duration.ofMinutes(1))
-                        .withMaxRetries(6)
+                        .withMaxRetries(connectionRetries)
                         .build(),
                 )
                     .onFailure {
