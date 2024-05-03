@@ -122,7 +122,8 @@ class AgentWrapper(
             }
             .getAsync { _ ->
                 val (agent, mediaStream) = synchronized(objectLock) {
-                    checkNotNull(this.agent) to checkNotNull(this.mediaStream)
+                    checkNotNull(this.agent) { "Agent must not be null" } to
+                        checkNotNull(this.mediaStream) { "mediaStream must not be null" }
                 }
 
                 agent.createComponent(

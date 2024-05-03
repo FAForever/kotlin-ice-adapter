@@ -11,6 +11,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import java.time.Clock
 import java.time.Duration
 import java.time.LocalDateTime
+import java.time.temporal.ChronoUnit
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
@@ -75,16 +76,16 @@ class ConnectivityChecker(
             get() {
                 val now = LocalDateTime.now(clock)
                 return when {
-                    Duration.between(connectionState.lastEchoReceived, now).seconds < connectionAliveSeconds -> ALIVE.also {
+                    ChronoUnit.SECONDS.between(connectionState.lastEchoReceived, now) < connectionAliveSeconds -> ALIVE.also {
                         logger.trace { "[$connectivityCheckable] Last echo within threshold, connection considered alive" }
                     }
 
-                    Duration.between(connectionState.lastEchoRequested, now).seconds > connectionEchoPendingSeconds &&
+                    ChronoUnit.SECONDS.between(connectionState.lastEchoRequested, now) > connectionEchoPendingSeconds &&
                         Duration.between(connectionState.lastEchoRequested, connectionState.lastEchoReceived).seconds < connectionEchoPendingSeconds -> ECHO_REQUIRED.also {
                         logger.trace { "[$connectivityCheckable] Echo waiting time within threshold, keep waiting" }
                     }
 
-                    Duration.between(connectionState.lastEchoReceived, now).seconds < connectionDeadThresholdSeconds -> ECHO_PENDING.also {
+                    ChronoUnit.SECONDS.between(connectionState.lastEchoReceived, now) < connectionDeadThresholdSeconds -> ECHO_PENDING.also {
                         logger.trace { "[$connectivityCheckable] No echo received (but still within 1 minute), connection critical" }
                     }
 
