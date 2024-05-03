@@ -81,7 +81,7 @@ class ConnectivityChecker(
                     }
 
                     ChronoUnit.SECONDS.between(connectionState.lastEchoRequested, now) > connectionEchoPendingSeconds &&
-                        Duration.between(connectionState.lastEchoRequested, connectionState.lastEchoReceived).seconds < connectionEchoPendingSeconds -> ECHO_REQUIRED.also {
+                            ChronoUnit.SECONDS.between(connectionState.lastEchoRequested, connectionState.lastEchoReceived) < connectionEchoPendingSeconds -> ECHO_REQUIRED.also {
                         logger.trace { "[$connectivityCheckable] Echo waiting time within threshold, keep waiting" }
                     }
 
