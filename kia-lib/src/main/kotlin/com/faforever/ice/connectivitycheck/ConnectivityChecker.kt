@@ -9,7 +9,6 @@ import com.faforever.ice.util.ExecutorHolder
 import com.faforever.ice.util.ReusableComponent
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.time.Clock
-import java.time.Duration
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 import java.util.concurrent.ConcurrentHashMap
@@ -81,7 +80,7 @@ class ConnectivityChecker(
                     }
 
                     ChronoUnit.SECONDS.between(connectionState.lastEchoRequested, now) > connectionEchoPendingSeconds &&
-                            ChronoUnit.SECONDS.between(connectionState.lastEchoRequested, connectionState.lastEchoReceived) < connectionEchoPendingSeconds -> ECHO_REQUIRED.also {
+                        ChronoUnit.SECONDS.between(connectionState.lastEchoRequested, connectionState.lastEchoReceived) < connectionEchoPendingSeconds -> ECHO_REQUIRED.also {
                         logger.trace { "[$connectivityCheckable] Echo waiting time within threshold, keep waiting" }
                     }
 
