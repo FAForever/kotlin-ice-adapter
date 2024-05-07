@@ -69,8 +69,8 @@ class TelemetryClient(
         websocketClient = TelemetryWebsocketClient(uri)
 
         sendingLoopThread = Thread(this::sendingLoop)
-        sendingLoopThread.uncaughtExceptionHandler = Thread.UncaughtExceptionHandler { _: Thread?, e: Throwable? ->
-            logger.error { "Thread sendingLoop crashed unexpectedly: $e" }
+        sendingLoopThread.uncaughtExceptionHandler = Thread.UncaughtExceptionHandler { _: Thread, e: Throwable ->
+            logger.error(e) { "Thread sendingLoop crashed unexpectedly: " }
         }
 
         CompletableFuture.runAsync {
