@@ -7,13 +7,13 @@ import dev.failsafe.Failsafe
 import dev.failsafe.RetryPolicy
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.java_websocket.client.WebSocketClient
+import org.java_websocket.enums.ReadyState
 import org.java_websocket.handshake.ServerHandshake
 import java.io.IOException
 import java.net.ConnectException
 import java.net.URI
 import java.time.Duration
 import java.util.UUID
-import java.util.concurrent.CompletableFuture
 import java.util.concurrent.LinkedBlockingQueue
 
 private val logger = KotlinLogging.logger {}
@@ -72,16 +72,15 @@ class TelemetryClient(
         sendingLoopThread.uncaughtExceptionHandler = Thread.UncaughtExceptionHandler { _: Thread, e: Throwable ->
             logger.error(e) { "Thread sendingLoop crashed unexpectedly: " }
         }
-
-        CompletableFuture.runAsync {
-            websocketClient.connectBlocking()
-            sendingLoopThread.start()
-        }
+        sendingLoopThread.start()
 
         registerAsPeer()
     }
 
     private fun sendingLoop() {
+        if (websocketClient.readyState == ReadyState.NOT_YET_CONNECTED) {
+            websocketClient.connectBlocking()
+        }
         while (!connectionFailed) {
             val message = messageQueue.take()
 
