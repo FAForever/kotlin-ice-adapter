@@ -3,25 +3,36 @@ package com.faforever.ice.telemetry
 import com.faforever.ice.IceAdapter
 import com.faforever.ice.IceOptions
 import com.fasterxml.jackson.databind.ObjectMapper
+import dev.failsafe.Failsafe
+import dev.failsafe.RetryPolicy
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.java_websocket.client.WebSocketClient
+import org.java_websocket.enums.ReadyState
 import org.java_websocket.handshake.ServerHandshake
 import java.io.IOException
 import java.net.ConnectException
 import java.net.URI
+import java.time.Duration
 import java.util.UUID
-import java.util.concurrent.CompletableFuture
+import java.util.concurrent.LinkedBlockingQueue
 
 private val logger = KotlinLogging.logger {}
 
 class TelemetryClient(
     private val iceOptions: IceOptions,
     private val objectMapper: ObjectMapper,
+    private val connectionRetries: Int = 6,
 ) {
     private val serverBaseUrl = iceOptions.telemetryServer
 
-    private val websocketClient: WebSocketClient
-    private var connectingFuture: CompletableFuture<Void>
+    private var websocketClient: WebSocketClient
+    private val sendingLoopThread: Thread
+    private val messageQueue = LinkedBlockingQueue<OutgoingMessageV1>()
+
+    // True if we have given up trying to connect to the telemetry server.
+    private var connectionFailed = false
+
+    private enum class ConnectionResult { SUCCESS, FAILURE }
 
     inner class TelemetryWebsocketClient(serverUri: URI) : WebSocketClient(serverUri) {
 
@@ -36,7 +47,6 @@ class TelemetryClient(
 
         override fun onClose(code: Int, reason: String, remote: Boolean) {
             logger.info { "Telemetry websocket closed (reason: $reason). Trying to reconnect!" }
-            connectingFuture = connectAsync()
         }
 
         override fun onError(ex: Exception) {
@@ -51,35 +61,65 @@ class TelemetryClient(
     init {
         logger.info {
             "Open the telemetry ui via ${
-                serverBaseUrl.replaceFirst(
-                    "ws",
-                    "http",
-                )
+                serverBaseUrl.replaceFirst("ws", "http")
             }/app.html?gameId=${iceOptions.gameId}&playerId=${iceOptions.userId}"
         }
 
         val uri: URI = URI.create("$serverBaseUrl/adapter/v1/game/${iceOptions.gameId}/player/${iceOptions.userId}")
         websocketClient = TelemetryWebsocketClient(uri)
 
-        connectingFuture = connectAsync()
+        sendingLoopThread = Thread(this::sendingLoop)
+        sendingLoopThread.uncaughtExceptionHandler = Thread.UncaughtExceptionHandler { _: Thread, e: Throwable ->
+            logger.error(e) { "Thread sendingLoop crashed unexpectedly: " }
+        }
+        sendingLoopThread.start()
+
         registerAsPeer()
     }
 
-    private fun connectAsync() = CompletableFuture.runAsync(websocketClient::connect)
-        .exceptionally {
-            logger.error(it) { "Failed to connect to telemetry websocket" }
-            null
+    private fun sendingLoop() {
+        if (websocketClient.readyState == ReadyState.NOT_YET_CONNECTED) {
+            websocketClient.connectBlocking()
         }
+        while (!connectionFailed) {
+            val message = messageQueue.take()
 
-    private fun sendMessage(message: OutgoingMessageV1) {
-        connectingFuture.thenRun {
-            try {
-                val json = objectMapper.writeValueAsString(message)
-                websocketClient.send(json)
-            } catch (e: IOException) {
-                logger.error(e) { "Error on serialising message object: $message" }
+            if (websocketClient.isClosed) {
+                Failsafe.with(
+                    RetryPolicy.builder<ConnectionResult>()
+                        .handleResult(ConnectionResult.FAILURE)
+                        .withBackoff(Duration.ofSeconds(2), Duration.ofMinutes(1))
+                        .withMaxRetries(connectionRetries)
+                        .build(),
+                )
+                    .onFailure {
+                        logger.info { "Failed to reconnect to the telemetry server after ${it.attemptCount} attempts." }
+                        connectionFailed = true
+                    }
+                    .get { _ ->
+                        logger.info { "Attempting reconnect to telemetry server..." }
+                        websocketClient.reconnectBlocking()
+                        if (websocketClient.isOpen) ConnectionResult.SUCCESS else ConnectionResult.FAILURE
+                    }
+            }
+            if (websocketClient.isOpen) {
+                try {
+                    val json = objectMapper.writeValueAsString(message)
+                    websocketClient.send(json)
+                } catch (e: IOException) {
+                    logger.error(e) { "Error serialising message object: $message" }
+                } catch (e: Exception) {
+                    logger.error(e) { "Error sending message object: $message" }
+                }
             }
         }
+    }
+
+    private fun sendMessage(message: OutgoingMessageV1) {
+        if (connectionFailed) {
+            return
+        }
+        messageQueue.put(message)
     }
 
     private fun registerAsPeer() {
