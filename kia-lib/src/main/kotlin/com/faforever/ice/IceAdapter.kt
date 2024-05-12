@@ -146,8 +146,7 @@ class IceAdapter(
             publishIceConnectionState = onIceConnectionStateChanged,
         )
 
-        val connectivityCheckHandler = connectivityChecker.registerPlayer(remotePeerOrchestrator)
-        remotePeerOrchestrator.initialize(connectivityCheckHandler)
+        remotePeerOrchestrator.initialize()
 
         players[remotePlayerId] = remotePeerOrchestrator
 
@@ -174,12 +173,11 @@ class IceAdapter(
             isOfferer = offer,
             forceRelay = iceOptions.forceRelay,
             coturnServers = coturnServers,
-            publishLocalCandidates = onIceCandidatesGathered,
+            publishLocalCandidates = ::onIceCandidates,
             publishIceConnectionState = onIceConnectionStateChanged,
         )
 
-        val connectivityCheckHandler = connectivityChecker.registerPlayer(remotePeerOrchestrator)
-        remotePeerOrchestrator.initialize(connectivityCheckHandler)
+        remotePeerOrchestrator.initialize()
 
         players[remotePlayerId] = remotePeerOrchestrator
 
@@ -226,5 +224,12 @@ class IceAdapter(
     fun sendToGpgNet(message: GpgnetMessage) {
         logger.debug { "sendToGpgNet: message=$message" }
         gpgnetProxy.sendGpgnetMessage(message)
+    }
+
+    private fun onIceCandidates(candidatesMessage: CandidatesMessage) {
+        val remotePeerOrchestrator = players[candidatesMessage.destinationId]!!
+        val connectivityCheckHandler = connectivityChecker.registerPlayer(remotePeerOrchestrator)
+        remotePeerOrchestrator.setConnectivityCheckHandler(connectivityCheckHandler)
+        this.onIceCandidatesGathered(candidatesMessage)
     }
 }

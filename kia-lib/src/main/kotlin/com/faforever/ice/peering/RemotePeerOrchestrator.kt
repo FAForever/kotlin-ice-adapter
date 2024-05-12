@@ -49,7 +49,7 @@ class RemotePeerOrchestrator(
     @Volatile
     private var closing = false
 
-    fun initialize(connectivityCheckHandler: ConnectivityCheckHandler) {
+    fun initialize() {
         withLoggingContext("remotePlayerId" to remotePlayerId.toString()) {
             synchronized(objectLock) {
                 if (this.iceState.isNotIn(IceState.NEW, IceState.DISCONNECTED)) {
@@ -64,10 +64,19 @@ class RemotePeerOrchestrator(
                     name = "player-$remotePlayerId",
                 ).apply { start() }
 
-                this.connectivityCheckHandler = connectivityCheckHandler
                 initAgent()
             }
         }
+    }
+
+    fun setConnectivityCheckHandler(checkHandler: ConnectivityCheckHandler) {
+        val currentHandler = connectivityCheckHandler
+        if (currentHandler != null) {
+            logger.warn { "ConnectivityCheckHandler was already set, disconnecting" }
+            currentHandler.disconnected()
+        }
+
+        this.connectivityCheckHandler = checkHandler
     }
 
     private fun initAgent() {
