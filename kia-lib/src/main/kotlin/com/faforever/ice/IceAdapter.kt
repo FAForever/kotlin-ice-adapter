@@ -26,7 +26,7 @@ class IceAdapter(
     private val iceOptions: IceOptions,
     private val apiClient: ApiClient,
     private val telemetryClient: TelemetryClient,
-    onGameConnectionStateChanged: (String) -> Unit,
+    onGameConnectionStateChanged: (GpgnetProxy.ConnectionState) -> Unit,
     private val onGpgNetMessageReceived: (GpgnetMessage) -> Unit,
     private val onIceCandidatesGathered: (CandidatesMessage) -> Unit,
     private val onIceConnectionStateChanged: (Int, Int, String) -> Unit,
@@ -45,12 +45,18 @@ class IceAdapter(
     var lobbyInitMode: LobbyInitMode = LobbyInitMode.NORMAL
         private set
     var gameState: GameState = GameState.NONE
-        private set
+        private set(value) {
+            field = value
+            telemetryClient.updateGameState(value)
+        }
 
     private lateinit var lobbyStateFuture: CompletableFuture<Void>
     private val gpgnetProxy = GpgnetProxy(
         iceOptions = iceOptions,
-        onGameConnectionStateChanged = onGameConnectionStateChanged,
+        onGameConnectionStateChanged = { newState ->
+            telemetryClient.updateGpgnetState(newState)
+            onGameConnectionStateChanged(newState)
+        },
         onMessage = ::onGpgnetMessage,
         onFailure = { throw it },
     )

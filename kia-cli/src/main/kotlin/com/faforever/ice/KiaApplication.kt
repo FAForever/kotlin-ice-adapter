@@ -1,6 +1,7 @@
 package com.faforever.ice
 
 import com.faforever.ice.gpgnet.GpgnetMessage
+import com.faforever.ice.gpgnet.GpgnetProxy
 import com.faforever.ice.ice4j.CandidatesMessage
 import com.faforever.ice.icebreaker.ApiClient
 import com.faforever.ice.rpc.RpcService
@@ -77,7 +78,7 @@ class KiaApplication : Callable<Int> {
     private lateinit var iceAdapter: IceAdapter
     private lateinit var rpcService: RpcService
 
-    private fun onConnectionStateChanged(newState: String) = rpcService.onConnectionStateChanged(newState)
+    private fun onConnectionStateChanged(newState: GpgnetProxy.ConnectionState) = rpcService.onConnectionStateChanged(newState)
 
     private fun onGpgNetMessageReceived(message: GpgnetMessage) = rpcService.onGpgNetMessageReceived(message)
 

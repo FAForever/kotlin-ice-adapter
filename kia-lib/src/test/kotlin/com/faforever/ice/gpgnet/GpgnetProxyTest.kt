@@ -11,6 +11,7 @@ import io.mockk.impl.annotations.MockK
 import io.mockk.junit5.MockKExtension
 import io.mockk.justRun
 import io.mockk.mockk
+import io.mockk.spyk
 import io.mockk.verify
 import org.awaitility.Awaitility.await
 import org.junit.jupiter.api.AfterEach
@@ -36,7 +37,7 @@ class GpgnetProxyTest {
     private val testTCPPort = 5000
     private val testMessage = GpgnetMessage.HostGame("myMap")
 
-    private var onGameConnectionStateChanged: (String) -> Unit = {}
+    private val onGameConnectionStateChanged = spyk<(GpgnetProxy.ConnectionState) -> Unit>()
     private var onMessage: (GpgnetMessage) -> Unit = {}
     private var onFailure: (Throwable) -> Unit = {}
 
@@ -47,7 +48,7 @@ class GpgnetProxyTest {
 
         sut = GpgnetProxy(
             iceOptions = iceOptions,
-            onGameConnectionStateChanged = { onGameConnectionStateChanged(it) },
+            onGameConnectionStateChanged = onGameConnectionStateChanged,
             onMessage = { onMessage(it) },
             onFailure = { onFailure(it) },
         )
@@ -56,6 +57,7 @@ class GpgnetProxyTest {
     @AfterEach
     fun afterEach() {
         sut.close()
+        clearAllMocks()
     }
 
     @Test
@@ -124,7 +126,7 @@ class GpgnetProxyTest {
     }
 
     @Test
-    fun `it should be connected once TCP client connects`() {
+    fun `it should be connected once TCP client connects and disconnected when closed`() {
         val serverSocket = mockCreateLocalTCPSocket(testTCPPort)
         val socket = mockk<Socket>()
         val countDownLatch = CountDownLatch(1)
@@ -139,9 +141,25 @@ class GpgnetProxyTest {
 
         sut.start()
 
-        await().until { sut.state == GpgnetProxy.ConnectionState.LISTENING }
+        await().untilAsserted {
+            assertEquals(GpgnetProxy.ConnectionState.LISTENING, sut.state)
+            verify {
+                onGameConnectionStateChanged.invoke(GpgnetProxy.ConnectionState.LISTENING)
+            }
+        }
         countDownLatch.countDown()
-        await().until { sut.state == GpgnetProxy.ConnectionState.CONNECTED }
+        await().untilAsserted {
+            assertEquals(GpgnetProxy.ConnectionState.CONNECTED, sut.state)
+            verify {
+                onGameConnectionStateChanged.invoke(GpgnetProxy.ConnectionState.CONNECTED)
+            }
+        }
+        justRun { serverSocket.close() }
+        sut.stop()
+        assertEquals(GpgnetProxy.ConnectionState.DISCONNECTED, sut.state)
+        verify {
+            onGameConnectionStateChanged.invoke(GpgnetProxy.ConnectionState.DISCONNECTED)
+        }
     }
 
     @Test

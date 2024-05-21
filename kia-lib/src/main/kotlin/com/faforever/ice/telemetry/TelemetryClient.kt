@@ -2,6 +2,8 @@ package com.faforever.ice.telemetry
 
 import com.faforever.ice.IceAdapter
 import com.faforever.ice.IceOptions
+import com.faforever.ice.game.GameState
+import com.faforever.ice.gpgnet.GpgnetProxy
 import com.fasterxml.jackson.databind.ObjectMapper
 import dev.failsafe.Failsafe
 import dev.failsafe.RetryPolicy
@@ -143,5 +145,13 @@ class TelemetryClient(
         val connectedHost: String = telemetryCoturnServers.map { it.host }.firstOrNull() ?: ""
         val message = UpdateCoturnList(connectedHost, telemetryCoturnServers, UUID.randomUUID())
         sendMessage(message)
+    }
+
+    fun updateGpgnetState(newState: GpgnetProxy.ConnectionState) {
+        messageQueue.put(UpdateGpgnetState(UpdateGpgnetState.GpgnetState.from(newState)))
+    }
+
+    fun updateGameState(newState: GameState) {
+        messageQueue.put(UpdateGameState(newState))
     }
 }
