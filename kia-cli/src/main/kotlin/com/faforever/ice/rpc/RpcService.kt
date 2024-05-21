@@ -2,6 +2,7 @@ package com.faforever.ice.rpc
 
 import com.faforever.ice.IceAdapter
 import com.faforever.ice.gpgnet.GpgnetMessage
+import com.faforever.ice.gpgnet.GpgnetProxy
 import com.faforever.ice.ice4j.CandidatesMessage
 import com.faforever.ice.util.ReusableComponent
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -43,8 +44,15 @@ class RpcService(
         }
     }
 
-    fun onConnectionStateChanged(newState: String) {
-        sendNotification("onConnectionStateChanged", listOf(newState))
+    fun onConnectionStateChanged(newState: GpgnetProxy.ConnectionState) {
+        val newStateString: String? = when (newState) {
+            GpgnetProxy.ConnectionState.LISTENING -> null
+            GpgnetProxy.ConnectionState.CONNECTED -> "Connected"
+            GpgnetProxy.ConnectionState.DISCONNECTED -> "Disconnected"
+        }
+        if (newStateString != null) {
+            sendNotification("onConnectionStateChanged", listOf(newState))
+        }
     }
 
     fun onGpgNetMessageReceived(message: GpgnetMessage) {
