@@ -1,5 +1,7 @@
 package com.faforever.ice.telemetry
 
+import com.faforever.ice.game.GameState
+import com.faforever.ice.gpgnet.GpgnetProxy
 import com.fasterxml.jackson.annotation.JsonTypeInfo
 import java.time.Instant
 import java.util.UUID
@@ -47,15 +49,31 @@ data class UpdateCoturnList(
 
 @JvmRecord
 data class UpdateGameState(
-    val newState: String, // TODO: Use GameState enum
+    val newState: GameState,
     override val messageId: UUID = UUID.randomUUID(),
 ) : OutgoingMessageV1
 
 @JvmRecord
 data class UpdateGpgnetState(
-    val newState: String, // TODO: Use GameState enum
+    val newState: GpgnetState,
     override val messageId: UUID = UUID.randomUUID(),
-) : OutgoingMessageV1
+) : OutgoingMessageV1 {
+    enum class GpgnetState {
+        WAITING_FOR_GAME,
+        GAME_CONNECTED,
+        ;
+        companion object {
+            fun from(state: GpgnetProxy.ConnectionState): GpgnetState {
+                return when (state) {
+                    GpgnetProxy.ConnectionState.LISTENING,
+                    GpgnetProxy.ConnectionState.DISCONNECTED,
+                    -> UpdateGpgnetState.GpgnetState.WAITING_FOR_GAME
+                    GpgnetProxy.ConnectionState.CONNECTED -> UpdateGpgnetState.GpgnetState.GAME_CONNECTED
+                }
+            }
+        }
+    }
+}
 
 @JvmRecord
 data class UpdatePeerConnectivity(

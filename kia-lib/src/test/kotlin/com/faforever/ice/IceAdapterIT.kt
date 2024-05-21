@@ -1,8 +1,10 @@
 package com.faforever.ice
 
 import com.faforever.ice.game.GameState
+import com.faforever.ice.game.LobbyInitMode
 import com.faforever.ice.gpgnet.FakeGameClient
 import com.faforever.ice.gpgnet.GpgnetMessage
+import com.faforever.ice.gpgnet.GpgnetProxy
 import com.faforever.ice.ice4j.CandidatesMessage
 import com.faforever.ice.icebreaker.ApiClient
 import com.faforever.ice.peering.CoturnServer
@@ -11,7 +13,12 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
 import io.mockk.junit5.MockKExtension
+import io.mockk.mockk
+import io.mockk.spyk
+import io.mockk.verify
+import org.awaitility.Awaitility.await
 import org.junit.jupiter.api.Assertions.assertArrayEquals
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -190,5 +197,139 @@ class IceAdapterIT {
         val result = client2.receiveLobbyData()
 
         assertArrayEquals(data, result)
+        client1.stop()
+        client2.stop()
+    }
+
+    @Test
+    @Timeout(1, unit = TimeUnit.MINUTES)
+    fun `ice adapter cycles through GameStates and GpgnetConnectionStates`() {
+        every { apiClientMock1.requestSessionToken("Access Token User 1", 4711) } returns CompletableFuture.completedFuture(null)
+        every { apiClientMock1.requestSession(4711) } returns CompletableFuture.completedFuture(
+            ApiClient.Session(
+                id = "4711",
+                servers = listOf(
+                    ApiClient.Session.Server(
+                        id = "1",
+                        username = "User 1",
+                        credential = "cred1",
+                        urls = listOf(
+                            "stun://${coturnServerContainer.host}:3478",
+                            "turn://${coturnServerContainer.host}:3478?transport=udp",
+                            "turn://${coturnServerContainer.host}:3478?transport=tcp",
+                        ),
+                    ),
+                ),
+            ),
+        )
+        val iceOptions = IceOptions(
+            accessToken = "Access Token User 1",
+            userId = 1,
+            userName = "User 1",
+            gameId = 4711,
+            forceRelay = false,
+            rpcPort = 5236,
+            lobbyPort = 5001,
+            gpgnetPort = 5002,
+            icebreakerBaseUrl = "icebreakerBaseUrl",
+            telemetryServer = "telemetryServer",
+        )
+        val onGameConnectionStateChangedMock = spyk<(GpgnetProxy.ConnectionState) -> Unit>()
+        val onGpgNetMessageReceivedMock = mockk<(GpgnetMessage) -> Unit>()
+        val adapter1 = IceAdapter(
+            iceOptions = iceOptions,
+            apiClient = apiClientMock1,
+            telemetryClient = telemetryClientMock,
+            onGameConnectionStateChanged = onGameConnectionStateChangedMock,
+            onGpgNetMessageReceived = onGpgNetMessageReceivedMock,
+            onIceCandidatesGathered = {},
+            onIceConnectionStateChanged = { _, _, _ -> },
+            onConnected = { _, _, _ -> },
+            onIceAdapterStopped = {},
+            initialCoturnServers = listOf(),
+        ).apply { start("Access Token User 1", 4711) }
+        Thread.sleep(1000)
+
+        // Gpgnet connection state should change to listening on startup.
+        await().untilAsserted {
+            verify {
+                onGameConnectionStateChangedMock.invoke(GpgnetProxy.ConnectionState.LISTENING)
+                telemetryClientMock.updateGpgnetState(GpgnetProxy.ConnectionState.LISTENING)
+            }
+        }
+        val gameClientRecievedGpgnetMessage = spyk<(message: GpgnetMessage) -> Unit>()
+        val gameClient = spyk(
+            FakeGameClient(
+                iceOptions.gpgnetPort,
+                iceOptions.lobbyPort,
+                1,
+                gameClientRecievedGpgnetMessage,
+            ),
+        )
+
+        // Gpgnet connection state should change to CONNECTED after game client starts up.
+        await().untilAsserted {
+            verify {
+                onGameConnectionStateChangedMock.invoke(GpgnetProxy.ConnectionState.CONNECTED)
+                telemetryClientMock.updateGpgnetState(GpgnetProxy.ConnectionState.CONNECTED)
+            }
+        }
+
+        var message: GpgnetMessage = GpgnetMessage.GameState(GameState.IDLE)
+        gameClient.sendGpgnetMessage(message)
+        await().untilAsserted {
+            assertEquals(GameState.IDLE, adapter1.gameState)
+            verify {
+                telemetryClientMock.updateGameState(GameState.IDLE)
+                onGpgNetMessageReceivedMock.invoke(message)
+                gameClientRecievedGpgnetMessage(
+                    GpgnetMessage.CreateLobby(
+                        lobbyInitMode = LobbyInitMode.NORMAL,
+                        lobbyPort = iceOptions.lobbyPort,
+                        localPlayerName = iceOptions.userName,
+                        localPlayerId = iceOptions.userId,
+                    ),
+                )
+            }
+        }
+
+        message = GpgnetMessage.GameState(GameState.LOBBY)
+        gameClient.sendGpgnetMessage(message)
+        await().untilAsserted {
+            assertEquals(GameState.LOBBY, adapter1.gameState)
+            verify {
+                telemetryClientMock.updateGameState(GameState.LOBBY)
+                onGpgNetMessageReceivedMock.invoke(message)
+            }
+        }
+
+        message = GpgnetMessage.GameState(GameState.LAUNCHING)
+        gameClient.sendGpgnetMessage(message)
+        await().untilAsserted {
+            assertEquals(GameState.LAUNCHING, adapter1.gameState)
+            verify {
+                telemetryClientMock.updateGameState(GameState.LAUNCHING)
+                onGpgNetMessageReceivedMock.invoke(message)
+            }
+        }
+
+        message = GpgnetMessage.GameEnded()
+        gameClient.sendGpgnetMessage(message)
+        await().untilAsserted {
+            assertEquals(GameState.ENDED, adapter1.gameState)
+            verify {
+                telemetryClientMock.updateGameState(GameState.ENDED)
+                onGpgNetMessageReceivedMock.invoke(message)
+            }
+        }
+
+        gameClient.stop()
+        // Gpgnet connection state should change to DISCONNECTED after game client stops.
+        await().untilAsserted {
+            verify {
+                onGameConnectionStateChangedMock.invoke(GpgnetProxy.ConnectionState.DISCONNECTED)
+                telemetryClientMock.updateGpgnetState(GpgnetProxy.ConnectionState.DISCONNECTED)
+            }
+        }
     }
 }

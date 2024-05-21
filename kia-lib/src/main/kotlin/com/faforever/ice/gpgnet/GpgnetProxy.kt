@@ -21,7 +21,7 @@ private val logger = KotlinLogging.logger {}
  */
 class GpgnetProxy(
     iceOptions: IceOptions,
-    private val onGameConnectionStateChanged: (String) -> Unit,
+    private val onGameConnectionStateChanged: (ConnectionState) -> Unit,
     private val onMessage: (GpgnetMessage) -> Unit,
     private val onFailure: (Throwable) -> Unit,
 ) : ReusableComponent, Closeable {
@@ -45,7 +45,11 @@ class GpgnetProxy(
     var closing: Boolean = false
         private set
     var state: ConnectionState = ConnectionState.DISCONNECTED
-        private set
+        private set(value) {
+            field = value
+            onGameConnectionStateChanged(value)
+        }
+
     private var socket: ServerSocket? = null
     private var gameReaderThread: Thread? = null
     private var gameWriterThread: Thread? = null
@@ -88,7 +92,6 @@ class GpgnetProxy(
 
             synchronized(objectLock) {
                 state = ConnectionState.CONNECTED
-                onGameConnectionStateChanged("Connected")
             }
 
             gameReaderThread = Thread(
@@ -174,7 +177,6 @@ class GpgnetProxy(
 
             closing = true
             state = ConnectionState.DISCONNECTED
-            onGameConnectionStateChanged("Disconnected")
 
             gameReaderThread?.apply {
                 interrupt()

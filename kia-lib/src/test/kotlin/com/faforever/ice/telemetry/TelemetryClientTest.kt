@@ -2,6 +2,8 @@ package com.faforever.ice.telemetry
 
 import com.faforever.ice.IceAdapter
 import com.faforever.ice.IceOptions
+import com.faforever.ice.game.GameState
+import com.faforever.ice.gpgnet.GpgnetProxy
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
@@ -192,6 +194,76 @@ class TelemetryClientTest {
         await().atLeast(Duration.ofSeconds(1))
         verify(exactly = 2) {
             anyConstructed<TelemetryClient.TelemetryWebsocketClient>().reconnectBlocking()
+        }
+    }
+
+    @Test
+    fun `test update game state`() {
+        sut = TelemetryClient(mockIceOptions, jacksonObjectMapper())
+        sut.updateGameState(GameState.IDLE)
+
+        await().untilAsserted {
+            verify {
+                val expected =
+                    """
+                    {
+                    "messageType":"UpdateGameState",
+                    "newState":"IDLE",
+                    "messageId":"$messageUuid"
+                    }
+                    """.trimIndent().replace("\n", "")
+                anyConstructed<TelemetryClient.TelemetryWebsocketClient>().send(expected)
+            }
+        }
+    }
+
+    @Test
+    fun `test update gpgnet connection state`() {
+        sut = TelemetryClient(mockIceOptions, jacksonObjectMapper())
+
+        sut.updateGpgnetState(GpgnetProxy.ConnectionState.LISTENING)
+        await().untilAsserted {
+            verify {
+                val expected =
+                    """
+                    {
+                    "messageType":"UpdateGpgnetState",
+                    "newState":"WAITING_FOR_GAME",
+                    "messageId":"$messageUuid"
+                    }
+                    """.trimIndent().replace("\n", "")
+                anyConstructed<TelemetryClient.TelemetryWebsocketClient>().send(expected)
+            }
+        }
+
+        sut.updateGpgnetState(GpgnetProxy.ConnectionState.DISCONNECTED)
+        await().untilAsserted {
+            verify {
+                val expected =
+                    """
+                    {
+                    "messageType":"UpdateGpgnetState",
+                    "newState":"WAITING_FOR_GAME",
+                    "messageId":"$messageUuid"
+                    }
+                    """.trimIndent().replace("\n", "")
+                anyConstructed<TelemetryClient.TelemetryWebsocketClient>().send(expected)
+            }
+        }
+
+        sut.updateGpgnetState(GpgnetProxy.ConnectionState.CONNECTED)
+        await().untilAsserted {
+            verify {
+                val expected =
+                    """
+                    {
+                    "messageType":"UpdateGpgnetState",
+                    "newState":"GAME_CONNECTED",
+                    "messageId":"$messageUuid"
+                    }
+                    """.trimIndent().replace("\n", "")
+                anyConstructed<TelemetryClient.TelemetryWebsocketClient>().send(expected)
+            }
         }
     }
 }
