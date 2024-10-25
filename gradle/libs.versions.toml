@@ -21,7 +21,7 @@ jjsonrpc = { module = "com.github.faforever:JJsonRpc", version = "37669e0fed" }
 guava = { module = "com.google.guava:guava", version = "33.1.0-jre" }
 failsafe = { module = "dev.failsafe:failsafe", version = "3.3.2" }
 ice4j = { module = "org.jitsi:ice4j", version = "3.0-68-gd289f12" }
-java-websocket = { module = "org.java-websocket:Java-WebSocket", version = "1.5.6" }
+java-websocket = { module = "org.java-websocket:Java-WebSocket", version = "1.5.7" }
 
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version = "5.10.2" }
 testcontainers = { module = "org.testcontainers:testcontainers", version.ref = "testcontainers" }
