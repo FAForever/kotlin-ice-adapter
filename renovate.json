@@ -16,6 +16,10 @@
       "matchDatasources": ["gradle-version-catalog"],
       "enabled": true,
       "labels": ["deps"]
+    },
+    {
+      "matchUpdateTypes": ["minor", "patch"],
+      "automerge": true
     }
   ]
 }
