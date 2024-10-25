@@ -27,7 +27,7 @@ jobs:
       - name: Start native compile
         run: ./gradlew nativeCompile
       - name: Upload binary
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: kia-cli-${{ matrix.os }}
           path: kia-cli/build/native/nativeCompile/kia-cli*
