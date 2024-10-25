@@ -33,7 +33,7 @@ junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-kapt = { id = "org.jetbrains.kotlin.kapt", version.ref = "kotlin" }
-spotless = { id = "com.diffplug.spotless", version = "6.21.0" }
+spotless = { id = "com.diffplug.spotless", version = "6.25.0" }
 test-logger = { id = "com.adarshr.test-logger", version = "4.0.0" }
 johnrengelman-shadow = { id = "com.github.johnrengelman.shadow", version = "8.1.1" }
 buildtools-native = { id = "org.graalvm.buildtools.native", version = "0.9.28" }
