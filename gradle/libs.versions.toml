@@ -18,7 +18,7 @@ jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind", ver
 jackson-module-kotlin = { module = "com.fasterxml.jackson.module:jackson-module-kotlin", version.ref = "jackson" }
 jackson-datatype-jsr310 = { module = "com.fasterxml.jackson.datatype:jackson-datatype-jsr310", version.ref = "jackson" }
 jjsonrpc = { module = "com.github.faforever:JJsonRpc", version = "37669e0fed" }
-guava = { module = "com.google.guava:guava", version = "33.1.0-jre" }
+guava = { module = "com.google.guava:guava", version = "33.3.1-jre" }
 failsafe = { module = "dev.failsafe:failsafe", version = "3.3.2" }
 ice4j = { module = "org.jitsi:ice4j", version = "3.0-68-gd289f12" }
 java-websocket = { module = "org.java-websocket:Java-WebSocket", version = "1.5.7" }
