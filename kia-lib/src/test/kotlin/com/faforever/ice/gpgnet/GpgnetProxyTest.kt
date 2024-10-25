@@ -5,19 +5,12 @@ import com.faforever.ice.io.BlockingNoDataInputStream
 import com.faforever.ice.util.SocketFactory
 import com.faforever.ice.utils.mockCreateLocalTCPSocket
 import com.faforever.ice.utils.mockExecutorSingleThreaded
-import io.mockk.clearAllMocks
-import io.mockk.every
+import io.mockk.*
 import io.mockk.impl.annotations.MockK
 import io.mockk.junit5.MockKExtension
-import io.mockk.justRun
-import io.mockk.mockk
-import io.mockk.spyk
-import io.mockk.verify
 import org.awaitility.Awaitility.await
 import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
-import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -78,11 +71,13 @@ class GpgnetProxyTest {
         assertFalse(sut.closing)
         assertEquals(GpgnetProxy.ConnectionState.CONNECTED, sut.state)
 
-        verify {
-            SocketFactory.createLocalTCPSocket(testTCPPort)
-            serverSocket.accept()
-            socket.getInputStream()
-            socket.getOutputStream()
+        await().untilAsserted {
+            verify {
+                SocketFactory.createLocalTCPSocket(testTCPPort)
+                serverSocket.accept()
+                socket.getInputStream()
+                socket.getOutputStream()
+            }
         }
 
         // First close
@@ -92,8 +87,10 @@ class GpgnetProxyTest {
         assertTrue(sut.closing)
         assertEquals(GpgnetProxy.ConnectionState.DISCONNECTED, sut.state)
 
-        verify {
-            serverSocket.close()
+        await().untilAsserted {
+            verify {
+                serverSocket.close()
+            }
         }
 
         // Second start
