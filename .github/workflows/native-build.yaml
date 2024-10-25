@@ -1,5 +1,7 @@
 name: GraalVM Native Image builds
-on: [push]
+on:
+  release:
+    types: [ created ]
 jobs:
   build:
     name: ICE on ${{ matrix.os }}
