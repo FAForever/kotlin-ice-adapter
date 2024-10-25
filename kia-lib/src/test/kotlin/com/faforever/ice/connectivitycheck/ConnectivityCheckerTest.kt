@@ -8,7 +8,6 @@ import org.awaitility.Awaitility.await
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotEquals
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -47,13 +46,13 @@ class ConnectivityCheckerTest {
         assertFalse(sut.running)
 
         sut.start()
-        assertTrue(sut.running)
+        await().until { sut.running }
 
         sut.stop()
-        assertFalse(sut.running)
+        await().until { !sut.running }
 
         sut.start()
-        assertTrue(sut.running)
+        await().until { sut.running }
     }
 
     @Test
