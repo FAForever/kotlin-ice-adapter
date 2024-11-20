@@ -4,7 +4,7 @@ picocli = "4.7.6"
 jackson = "2.18.1"
 slf4j = "2.0.16"
 logback = "1.5.12"
-testcontainers = "1.20.3"
+testcontainers = "1.20.4"
 
 [libraries]
 slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
