@@ -1,5 +1,5 @@
 [versions]
-kotlin = "2.0.21"
+kotlin = "2.1.0"
 picocli = "4.7.6"
 jackson = "2.18.1"
 slf4j = "2.0.16"
