@@ -20,7 +20,7 @@ jackson-datatype-jsr310 = { module = "com.fasterxml.jackson.datatype:jackson-dat
 jjsonrpc = { module = "com.github.faforever:JJsonRpc", version = "37669e0fed" }
 guava = { module = "com.google.guava:guava", version = "33.3.1-jre" }
 failsafe = { module = "dev.failsafe:failsafe", version = "3.3.2" }
-ice4j = { module = "org.jitsi:ice4j", version = "3.2-4-g1373788" }
+ice4j = { module = "org.jitsi:ice4j", version = "3.2-5-g26210ef" }
 java-websocket = { module = "org.java-websocket:Java-WebSocket", version = "1.5.7" }
 
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version = "5.11.3" }
