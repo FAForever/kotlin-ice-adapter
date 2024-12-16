@@ -23,7 +23,7 @@ failsafe = { module = "dev.failsafe:failsafe", version = "3.3.2" }
 ice4j = { module = "org.jitsi:ice4j", version = "3.2-7-g4f13296" }
 java-websocket = { module = "org.java-websocket:Java-WebSocket", version = "1.6.0" }
 
-junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version = "5.11.3" }
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version = "5.11.4" }
 testcontainers = { module = "org.testcontainers:testcontainers", version.ref = "testcontainers" }
 testcontainers-junit-jupiter = { module = "org.testcontainers:junit-jupiter", version.ref = "testcontainers" }
 awaitility = { module = "org.awaitility:awaitility", version = "4.2.2" }
