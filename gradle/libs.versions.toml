@@ -36,4 +36,4 @@ kotlin-kapt = { id = "org.jetbrains.kotlin.kapt", version.ref = "kotlin" }
 spotless = { id = "com.diffplug.spotless", version = "7.0.2" }
 test-logger = { id = "com.adarshr.test-logger", version = "4.0.0" }
 johnrengelman-shadow = { id = "com.github.johnrengelman.shadow", version = "8.1.1" }
-buildtools-native = { id = "org.graalvm.buildtools.native", version = "0.10.4" }
+buildtools-native = { id = "org.graalvm.buildtools.native", version = "0.10.5" }
