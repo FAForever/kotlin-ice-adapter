@@ -9,7 +9,7 @@ testcontainers = "1.20.4"
 [libraries]
 slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
 slf4j-simple = { module = "org.slf4j:slf4j-simple", version.ref = "slf4j" }
-kotlin-logging-jvm = { module = "io.github.oshai:kotlin-logging-jvm", version = "7.0.3" }
+kotlin-logging-jvm = { module = "io.github.oshai:kotlin-logging-jvm", version = "7.0.4" }
 logback-core = { module = "ch.qos.logback:logback-core", version.ref = "logback" }
 logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
 picocli-codegen = { module = "info.picocli:picocli-codegen", version.ref = "picocli" }
