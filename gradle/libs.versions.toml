@@ -27,7 +27,7 @@ junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version = "5.12.0"
 testcontainers = { module = "org.testcontainers:testcontainers", version.ref = "testcontainers" }
 testcontainers-junit-jupiter = { module = "org.testcontainers:junit-jupiter", version.ref = "testcontainers" }
 awaitility = { module = "org.awaitility:awaitility", version = "4.3.0" }
-mockk = { module = "io.mockk:mockk", version = "1.13.16" }
+mockk = { module = "io.mockk:mockk", version = "1.13.17" }
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
 
 [plugins]
